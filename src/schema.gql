@@ -1,0 +1,140 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type User {
+  email: String!
+  username: String!
+  password: String!
+  nickname: String
+  firstName: String!
+  lastName: String!
+  avatar: String!
+  roles: [UserRole!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum UserRole {
+  ROOT
+  ADMIN
+  USER
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type ExistedCheckOutput {
+  result: Boolean!
+}
+
+type UserProfileOutput {
+  username: String!
+  nickname: String
+  firstName: String
+  lastName: String
+  avatar: String!
+  roles: [UserRole!]!
+}
+
+type SignInOutput {
+  token: String!
+  profile: UserProfileOutput!
+}
+
+type SignOutOutput {
+  msg: String!
+}
+
+type SignUpOutput {
+  user: String!
+}
+
+type Work {
+  name: String!
+  user: String!
+  codeHTML: String!
+  codeCSS: String!
+  codeJS: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Query {
+  users: [User!]!
+  user(username: String!): User!
+  whoAmI: User!
+  existedCheck(input: ExistedCheckInput!): ExistedCheckOutput!
+  work(id: Int!): Work!
+}
+
+input ExistedCheckInput {
+  type: AccountType!
+  value: String!
+}
+
+enum AccountType {
+  USERNAME
+  EMAIL
+}
+
+type Mutation {
+  createUser(createUserInput: CreateUserInput!): User!
+  updateUser(updateUserInput: UpdateUserInput!): User!
+  signIn(input: SignInInput!): SignInOutput!
+  signOut: SignOutOutput!
+  signUp(input: SignUpInput!): SignUpOutput!
+  createWork(createWorkInput: CreateWorkInput!): Work!
+  updateWork(updateWorkInput: UpdateWorkInput!): Work!
+  removeWork(id: Int!): Work!
+}
+
+input CreateUserInput {
+  username: String!
+  password: String!
+  firstName: String!
+  lastName: String!
+  avatar: String!
+}
+
+input UpdateUserInput {
+  username: String
+  password: String
+  firstName: String
+  lastName: String
+  avatar: String
+  id: Int!
+}
+
+input SignInInput {
+  account: String!
+  password: String!
+  type: String!
+}
+
+input SignUpInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  username: String!
+  password: String!
+}
+
+input CreateWorkInput {
+  name: String = "Untitled"
+  username: String!
+  codeHTML: String!
+  codeCSS: String!
+  codeJS: String!
+}
+
+input UpdateWorkInput {
+  name: String = "Untitled"
+  username: String
+  codeHTML: String
+  codeCSS: String
+  codeJS: String
+  id: Int!
+}
