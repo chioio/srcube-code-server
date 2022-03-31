@@ -1,32 +1,29 @@
+import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { MongoRepository } from 'typeorm';
+import { InjectModel } from '@nestjs/mongoose';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
-import { User } from './schema/user';
+import { User, UserDocument } from './schema/user';
 
 @Injectable()
 export class UserService {
-  constructor(
-    @InjectRepository(User)
-    private readonly userRepository: MongoRepository<User>,
-  ) {}
+  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
   async create(createUserInput: CreateUserInput) {
-    const user = this.userRepository.create(createUserInput);
-    return await this.userRepository.save(user);
+    const createdUser = new this.userModel(createUserInput);
+    return await createdUser.save();
   }
 
   async findAll() {
-    return await this.userRepository.find();
+    return await this.userModel.find().exec();
   }
 
   async findOneByUsername(username: string) {
-    return await this.userRepository.findOne({ username });
+    return await this.userModel.findOne({ username });
   }
 
   async findOneByEmail(email: string) {
-    return await this.userRepository.findOne({ email });
+    return await this.userModel.findOne({ email });
   }
 
   update(id: number, updateUserInput: UpdateUserInput) {

@@ -3,10 +3,10 @@
 # ------------------------------------------------------
 
 type User {
+  _id: String!
   email: String!
   username: String!
   password: String!
-  nickname: String
   firstName: String!
   lastName: String!
   avatar: String!
@@ -19,6 +19,7 @@ enum UserRole {
   ROOT
   ADMIN
   USER
+  type
 }
 
 """
@@ -32,9 +33,8 @@ type ExistedCheckOutput {
 
 type UserProfileOutput {
   username: String!
-  nickname: String
-  firstName: String
-  lastName: String
+  firstName: String!
+  lastName: String!
   avatar: String!
   roles: [UserRole!]!
 }
@@ -52,12 +52,17 @@ type SignUpOutput {
   user: String!
 }
 
-type Work {
-  name: String!
-  user: String!
-  codeHTML: String!
-  codeCSS: String!
-  codeJS: String!
+type CreationCode {
+  html: String!
+  css: String!
+  javascript: String!
+}
+
+type Creation {
+  _id: String!
+  title: String!
+  author: String!
+  code: CreationCode!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -67,7 +72,8 @@ type Query {
   user(username: String!): User!
   whoAmI: User!
   existedCheck(input: ExistedCheckInput!): ExistedCheckOutput!
-  work(id: Int!): Work!
+  creations: [Creation!]!
+  creation(_id: String!): Creation!
 }
 
 input ExistedCheckInput {
@@ -86,9 +92,8 @@ type Mutation {
   signIn(input: SignInInput!): SignInOutput!
   signOut: SignOutOutput!
   signUp(input: SignUpInput!): SignUpOutput!
-  createWork(createWorkInput: CreateWorkInput!): Work!
-  updateWork(updateWorkInput: UpdateWorkInput!): Work!
-  removeWork(id: Int!): Work!
+  createCreation(input: CreateCreationInput!): Creation!
+  removeCreation(id: Int!): Creation!
 }
 
 input CreateUserInput {
@@ -122,19 +127,14 @@ input SignUpInput {
   password: String!
 }
 
-input CreateWorkInput {
-  name: String = "Untitled"
-  username: String!
-  codeHTML: String!
-  codeCSS: String!
-  codeJS: String!
+input CreateCreationInput {
+  title: String = "Untitled"
+  author: String!
+  code: CreationCodeInput
 }
 
-input UpdateWorkInput {
-  name: String = "Untitled"
-  username: String
-  codeHTML: String
-  codeCSS: String
-  codeJS: String
-  id: Int!
+input CreationCodeInput {
+  html: String
+  css: String
+  javascript: String
 }

@@ -18,13 +18,10 @@ export class UserProfileOutput {
   @Field()
   username: string;
 
-  @Field(() => String, { nullable: true })
-  nickname: string;
-
-  @Field(() => String, { nullable: true })
+  @Field(() => String)
   firstName: string;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => String)
   lastName: string;
 
   @Field(() => String)

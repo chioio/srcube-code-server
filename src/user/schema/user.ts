@@ -1,12 +1,5 @@
 import { ObjectType, Field, registerEnumType } from '@nestjs/graphql';
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  ObjectIdColumn,
-  Unique,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
 export enum UserRole {
   ROOT,
@@ -18,52 +11,48 @@ registerEnumType(UserRole, {
   name: 'UserRole',
 });
 
+export type UserDocument = User & Document;
 @ObjectType()
-@Entity()
-@Unique(['username'])
+@Schema({
+  timestamps: true,
+})
 export class User {
-  @ObjectIdColumn()
+  @Field(() => String)
   _id: string;
 
   @Field()
-  @Column()
+  @Prop(String)
   email: string;
 
   @Field()
-  @Column()
+  @Prop(String)
   username: string;
 
   @Field()
-  @Column()
+  @Prop(String)
   password: string;
 
-  @Field({ nullable: true })
-  @Column()
-  nickname: string = null;
-
   @Field()
-  @Column()
+  @Prop(String)
   firstName: string;
 
   @Field()
-  @Column()
+  @Prop(String)
   lastName: string;
 
   @Field()
-  @Column()
+  @Prop(String)
   avatar: string;
 
   @Field(() => [UserRole])
-  @Column()
+  @Prop(UserRole)
   roles: [UserRole] = [UserRole.USER];
 
   @Field()
-  @Column()
-  @CreateDateColumn()
   createdAt: Date;
 
   @Field()
-  @Column()
-  @UpdateDateColumn()
   updatedAt: Date;
 }
+
+export const UserSchema = SchemaFactory.createForClass(User);

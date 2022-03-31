@@ -5,7 +5,7 @@ const definitionsFactory = new GraphQLDefinitionsFactory();
 
 definitionsFactory.generate({
   typePaths: ['./**/*.gql'],
-  path: join(process.cwd(), '../client/lib/api/schema.ts'),
+  path: join(process.cwd(), '../srcube-code-client/lib/api/schema.ts'),
   outputAs: 'interface',
   // watch: true,
 });

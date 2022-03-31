@@ -1,22 +1,15 @@
 import { join } from 'path';
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { MongooseModule } from '@nestjs/mongoose';
 import { GraphQLModule } from '@nestjs/graphql';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
-import { PlatformModule } from './platform/platform.module';
 import { ApolloServerPluginLandingPageLocalDefault } from 'apollo-server-core';
+import { CreationModule } from './creation/creation.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'mongodb',
-      host: 'localhost',
-      database: 'srcube-code',
-      autoLoadEntities: true,
-      synchronize: true,
-      logging: true,
-    }),
+    MongooseModule.forRoot('mongodb://localhost:27017/srcube-code'),
     GraphQLModule.forRoot({
       installSubscriptionHandlers: true,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
@@ -25,7 +18,7 @@ import { ApolloServerPluginLandingPageLocalDefault } from 'apollo-server-core';
     }),
     UserModule,
     AuthModule,
-    PlatformModule,
+    CreationModule,
   ],
 })
 export class AppModule {}
