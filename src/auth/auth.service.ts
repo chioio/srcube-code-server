@@ -50,33 +50,27 @@ export class AuthService {
     }
   }
 
-  async signIn({
-    account,
-    password,
-    type,
-  }: SignInInput): Promise<SignInOutput> {
-    const user =
-      type === 'email'
-        ? await this.userService.findOneByEmail(account)
-        : await this.userService.findOneByUsername(account);
-
+  async signIn(input: SignInInput): Promise<SignInOutput> {
+    const { password, ...profile } =
+      input.type === 'email'
+        ? await this.userService.findOneByEmail(input.account)
+        : await this.userService.findOneByUsername(input.account);
     // * There not need to judge, because the account has been checked for existence.
     // if (!user) {
     //   throw new UnauthorizedException();
     // }
 
-    const isPasswordValid = await AuthHelper.validate(password, user.password);
+    const isPasswordValid = await AuthHelper.validate(input.password, password);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException({ message: 'Password invalid!' });
     }
 
-    const payload = { username: user.username };
-    const profile = { ...user } as UserProfileOutput;
+    const payload = { username: profile.username };
 
     return {
       token: this.jwtService.sign(payload),
-      profile: profile,
+      profile: profile['_doc'],
     };
   }
 
