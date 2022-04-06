@@ -1,20 +1,23 @@
 import { Model } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { ObjectId } from 'mongodb';
 import { CreateCreationInput } from './dto/create-creation.input';
-import { UpdateCreationInput } from './dto/update-creation.input';
 import { Creation, CreationDocument } from './schema/creation';
+import { UpdateCreationInput } from './dto/update-creation.input';
+import { UpdateResult } from 'mongodb';
 
 @Injectable()
 export class CreationService {
   constructor(
-    @InjectModel(Creation.name) private creationModel: Model<CreationDocument>,
+    @InjectModel(Creation.name) private model: Model<CreationDocument>,
   ) {}
 
   async create(createCreationInput: CreateCreationInput) {
-    const createdCreation = new this.creationModel({ ...createCreationInput });
-    return await createdCreation.save();
+    return await new this.model({ ...createCreationInput }).save();
+  }
+
+  async findCreations(limit: number, offset: number): Promise<Creation[]> {
+    return await this.model.find({}).limit(limit).skip(offset)
   }
 
   findAll() {
@@ -22,11 +25,16 @@ export class CreationService {
   }
 
   async findOneById(_id: string) {
-    return await this.creationModel.findOne({ _id });
+    return await this.model.findOne({ _id });
   }
 
-  update(id: number, updateCreationInput: UpdateCreationInput) {
-    return `This action updates a #${id} creation`;
+  async update(updateCreationInput: UpdateCreationInput): Promise<Boolean> {
+    const res = await this.model.updateOne(
+      { _id: updateCreationInput._id },
+      { ...updateCreationInput },
+    );
+
+    return res.acknowledged;
   }
 
   remove(id: number) {

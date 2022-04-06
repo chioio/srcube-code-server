@@ -3,38 +3,42 @@ import { CreationService } from './creation.service';
 import { Creation } from './schema/creation';
 import { CreateCreationInput } from './dto/create-creation.input';
 import { UpdateCreationInput } from './dto/update-creation.input';
+import { CreationsOutput } from './dto/creations.output';
+import ConnectionArgs from 'src/connection.args';
+import { connectionFromArraySlice } from 'graphql-relay';
 
 @Resolver(() => Creation)
 export class CreationResolver {
-  constructor(private readonly creationService: CreationService) {}
+  constructor(private readonly service: CreationService) {}
 
   @Mutation(() => Creation)
   createCreation(@Args('input') createCreationInput: CreateCreationInput) {
-    return this.creationService.create(createCreationInput);
+    return this.service.create(createCreationInput);
   }
 
-  @Query(() => [Creation], { name: 'creations' })
-  findAll() {
-    return this.creationService.findAll();
+  @Query(() => CreationsOutput, { name: 'creations' })
+  async creations(@Args() args: ConnectionArgs): Promise<CreationsOutput> {
+    const { limit, offset } = args.pagingParams();
+    const result = await this.service.findCreations(limit, offset);
+
+    const page = connectionFromArraySlice(
+      result, args, { arrayLength: result.length, sliceStart: offset || 0 },
+    )
+    return { page, pageData: { count: result.length, limit, offset } };
   }
 
   @Query(() => Creation, { name: 'creation' })
   async findOne(@Args('_id', { type: () => String }) _id: string) {
-    return await this.creationService.findOneById(_id);
+    return await this.service.findOneById(_id);
   }
 
-  // @Mutation(() => Creation)
-  // updateCreation(
-  //   @Args('updateCreationInput') updateCreationInput: UpdateCreationInput,
-  // ) {
-  //   return this.creationService.update(
-  //     updateCreationInput.id,
-  //     updateCreationInput,
-  //   );
-  // }
+  @Mutation(() => Boolean)
+  updateCreation(@Args('input') updateCreationInput: UpdateCreationInput) {
+    return this.service.update(updateCreationInput);
+  }
 
   @Mutation(() => Creation)
   removeCreation(@Args('id', { type: () => Int }) id: number) {
-    return this.creationService.remove(id);
+    return this.service.remove(id);
   }
 }

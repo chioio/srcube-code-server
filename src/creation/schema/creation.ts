@@ -4,7 +4,6 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 export type CreationDocument = Creation & Document;
 
 @ObjectType()
-@Schema()
 export class CreationCode {
   @Field()
   @Prop(String)
@@ -35,7 +34,7 @@ export class Creation {
   @Prop(String)
   author: string;
 
-  @Field()
+  @Field(() => CreationCode)
   @Prop(CreationCode)
   code: CreationCode;
 

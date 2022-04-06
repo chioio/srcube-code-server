@@ -1,8 +1,7 @@
 import { InputType, Int, Field } from '@nestjs/graphql';
-import { PartialType } from '@nestjs/graphql';
 
 @InputType()
-export class CreationCodeInput {
+export class CreateCodeInput {
   @Field(() => String, { nullable: true })
   html: string | undefined;
 
@@ -21,8 +20,8 @@ export class CreateCreationInput {
   @Field(() => String)
   author: string;
 
-  @Field(() => CreationCodeInput, { nullable: true })
-  code: CreationCodeInput;
+  @Field(() => CreateCodeInput, { nullable: true })
+  code: CreateCodeInput;
 }
 
 

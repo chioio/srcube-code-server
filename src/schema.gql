@@ -67,12 +67,52 @@ type Creation {
   updatedAt: DateTime!
 }
 
+type PageData {
+  count: Float!
+  limit: Float!
+  offset: Float!
+}
+
+type CreationsOutput {
+  page: CreationConnection!
+  pageData: PageData
+}
+
+type CreationConnection {
+  edges: [CreationEdge!]
+  pageInfo: CreationPageInfo
+}
+
+type CreationEdge {
+  cursor: String
+  node: Creation
+}
+
+type CreationPageInfo {
+  startCursor: String
+  endCursor: String
+  hasPreviousPage: Boolean!
+  hasNextPage: Boolean!
+}
+
 type Query {
   users: [User!]!
   user(username: String!): User!
   whoAmI: User!
   existedCheck(input: ExistedCheckInput!): ExistedCheckOutput!
-  creations: [Creation!]!
+  creations(
+    """Paginate before opaque cursor"""
+    before: String
+
+    """Paginate after opaque cursor"""
+    after: String
+
+    """Paginate first"""
+    first: Float
+
+    """Paginate last"""
+    last: Float
+  ): CreationsOutput!
   creation(_id: String!): Creation!
 }
 
@@ -93,6 +133,7 @@ type Mutation {
   signOut: SignOutOutput!
   signUp(input: SignUpInput!): SignUpOutput!
   createCreation(input: CreateCreationInput!): Creation!
+  updateCreation(input: UpdateCreationInput!): Boolean!
   removeCreation(id: Int!): Creation!
 }
 
@@ -130,10 +171,23 @@ input SignUpInput {
 input CreateCreationInput {
   title: String = "Untitled"
   author: String!
-  code: CreationCodeInput
+  code: CreateCodeInput
 }
 
-input CreationCodeInput {
+input CreateCodeInput {
+  html: String
+  css: String
+  javascript: String
+}
+
+input UpdateCreationInput {
+  _id: String!
+  title: String = "Untitled"
+  author: String!
+  code: UpdateCodeInput
+}
+
+input UpdateCodeInput {
   html: String
   css: String
   javascript: String
