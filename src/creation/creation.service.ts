@@ -13,12 +13,35 @@ export class CreationService {
   ) {}
 
   async create(createCreationInput: CreateCreationInput) {
-    return await new this.model({ ...createCreationInput }).save();
+    return await new this.model({
+      ...createCreationInput,
+      stars: 0,
+      comments: 0,
+    }).save();
   }
 
-  async findCreations(limit: number, offset: number): Promise<Creation[]> {
-    return await this.model.find({}).limit(limit).skip(offset)
+  async findAndCount(
+    limit: number,
+    offset: number,
+  ): Promise<{ creations: Creation[]; count: number }> {
+    return {
+      creations: await this.model.find({}).limit(limit).skip(offset),
+      count: await this.model.countDocuments(),
+    };
   }
+
+  // async findOneAndUpdate(_id: string) {
+  //   const res = await this.model.updateOne(
+  //     { _id },
+  //     {
+  //       $set: {
+  //         stars:
+  //       },
+  //     },
+  //   );
+
+  //   return res.acknowledged;
+  // }
 
   findAll() {
     return `This action returns all creation`;
@@ -26,6 +49,10 @@ export class CreationService {
 
   async findOneById(_id: string) {
     return await this.model.findOne({ _id });
+  }
+
+  async findOneByIdAndUpdate(_id: string, update: Object) {
+    const res = await this.model.findByIdAndUpdate(_id, update);
   }
 
   async update(updateCreationInput: UpdateCreationInput): Promise<Boolean> {

@@ -39,6 +39,14 @@ export class Creation {
   code: CreationCode;
 
   @Field()
+  @Prop(Number)
+  stars: number = 0;
+
+  @Field()
+  @Prop(Number)
+  comments: number = 0;
+
+  @Field()
   createdAt: Date;
 
   @Field()

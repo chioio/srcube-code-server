@@ -19,12 +19,12 @@ export class CreationResolver {
   @Query(() => CreationsOutput, { name: 'creations' })
   async creations(@Args() args: ConnectionArgs): Promise<CreationsOutput> {
     const { limit, offset } = args.pagingParams();
-    const result = await this.service.findCreations(limit, offset);
+    const {creations, count} = await this.service.findAndCount(limit, offset);
 
     const page = connectionFromArraySlice(
-      result, args, { arrayLength: result.length, sliceStart: offset || 0 },
+      creations, args, { arrayLength: count, sliceStart: offset || 0 },
     )
-    return { page, pageData: { count: result.length, limit, offset } };
+    return { page, pageData: { count: creations.length, limit, offset } };
   }
 
   @Query(() => Creation, { name: 'creation' })

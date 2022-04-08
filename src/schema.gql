@@ -63,6 +63,8 @@ type Creation {
   title: String!
   author: String!
   code: CreationCode!
+  stars: Float!
+  comments: Float!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -95,6 +97,14 @@ type CreationPageInfo {
   hasNextPage: Boolean!
 }
 
+type Star {
+  _id: String!
+  username: String!
+  creationId: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
 type Query {
   users: [User!]!
   user(username: String!): User!
@@ -114,6 +124,7 @@ type Query {
     last: Float
   ): CreationsOutput!
   creation(_id: String!): Creation!
+  stars(username: String, creationId: String!): [Star!]!
 }
 
 input ExistedCheckInput {
@@ -135,6 +146,9 @@ type Mutation {
   createCreation(input: CreateCreationInput!): Creation!
   updateCreation(input: UpdateCreationInput!): Boolean!
   removeCreation(id: Int!): Creation!
+  createStar(createStarInput: CreateStarInput!): Star!
+  updateStar(updateStarInput: UpdateStarInput!): Star!
+  removeStar(_id: String!): Boolean!
 }
 
 input CreateUserInput {
@@ -191,4 +205,15 @@ input UpdateCodeInput {
   html: String
   css: String
   javascript: String
+}
+
+input CreateStarInput {
+  username: String!
+  creationId: String!
+}
+
+input UpdateStarInput {
+  username: String
+  creationId: String
+  id: Int!
 }
