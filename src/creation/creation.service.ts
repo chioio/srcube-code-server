@@ -4,7 +4,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { CreateCreationInput } from './dto/create-creation.input';
 import { Creation, CreationDocument } from './schema/creation';
 import { UpdateCreationInput } from './dto/update-creation.input';
-import { UpdateResult } from 'mongodb';
 
 @Injectable()
 export class CreationService {
@@ -23,28 +22,27 @@ export class CreationService {
   async findAndCount(
     limit: number,
     offset: number,
+    search?: string,
   ): Promise<{ creations: Creation[]; count: number }> {
+    const count = await this.model
+      .find(search ? { title: { $regex: search, $options: 'i' } } : {})
+      .countDocuments();
+
+    const creations = await this.model
+      .find(search ? { title: { $regex: search, $options: 'i' } } : {})
+      .limit(limit)
+      .skip(offset);
     return {
-      creations: await this.model.find({}).limit(limit).skip(offset),
-      count: await this.model.countDocuments(),
+      count,
+      creations,
     };
   }
 
-  // async findOneAndUpdate(_id: string) {
-  //   const res = await this.model.updateOne(
-  //     { _id },
-  //     {
-  //       $set: {
-  //         stars:
-  //       },
-  //     },
-  //   );
-
-  //   return res.acknowledged;
-  // }
-
-  findAll() {
-    return `This action returns all creation`;
+  async search(query: string) {
+    // search by title
+    return await this.model.find({
+      title: { $regex: query, $options: 'i' },
+    });
   }
 
   async findOneById(_id: string) {

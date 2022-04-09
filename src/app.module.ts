@@ -7,6 +7,8 @@ import { AuthModule } from './auth/auth.module';
 import { ApolloServerPluginLandingPageLocalDefault } from 'apollo-server-core';
 import { CreationModule } from './creation/creation.module';
 import { StarModule } from './star/star.module';
+import { FollowModule } from './follow/follow.module';
+import { PinModule } from './pin/pin.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { StarModule } from './star/star.module';
     AuthModule,
     CreationModule,
     StarModule,
+    FollowModule,
+    PinModule,
   ],
 })
 export class AppModule {}

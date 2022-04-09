@@ -17,14 +17,18 @@ export class CreationResolver {
   }
 
   @Query(() => CreationsOutput, { name: 'creations' })
-  async creations(@Args() args: ConnectionArgs): Promise<CreationsOutput> {
+  async creations(
+    @Args() args: ConnectionArgs,
+    @Args('search', { nullable: true }) search?: string,
+  ): Promise<CreationsOutput> {
     const { limit, offset } = args.pagingParams();
-    const {creations, count} = await this.service.findAndCount(limit, offset);
+    const { creations, count } = await this.service.findAndCount(limit, offset, search);
 
-    const page = connectionFromArraySlice(
-      creations, args, { arrayLength: count, sliceStart: offset || 0 },
-    )
-    return { page, pageData: { count: creations.length, limit, offset } };
+    const page = connectionFromArraySlice(creations, args, {
+      arrayLength: count,
+      sliceStart: offset || 0,
+    });
+    return { page, pageData: { count: count, limit, offset } };
   }
 
   @Query(() => Creation, { name: 'creation' })

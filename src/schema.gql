@@ -105,12 +105,50 @@ type Star {
   updatedAt: DateTime!
 }
 
+type Follow {
+  _id: String!
+  username: String!
+  following: String!
+}
+
+type FollowsOutput {
+  page: FollowConnection!
+  pageData: PageData
+}
+
+type FollowConnection {
+  edges: [FollowEdge!]
+  pageInfo: FollowPageInfo
+}
+
+type FollowEdge {
+  cursor: String
+  node: Follow
+}
+
+type FollowPageInfo {
+  startCursor: String
+  endCursor: String
+  hasPreviousPage: Boolean!
+  hasNextPage: Boolean!
+}
+
+type Pin {
+  _id: String!
+  username: String!
+  creationIds: [String!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
 type Query {
   users: [User!]!
   user(username: String!): User!
   whoAmI: User!
   existedCheck(input: ExistedCheckInput!): ExistedCheckOutput!
   creations(
+    search: String
+
     """Paginate before opaque cursor"""
     before: String
 
@@ -125,6 +163,24 @@ type Query {
   ): CreationsOutput!
   creation(_id: String!): Creation!
   stars(username: String, creationId: String!): [Star!]!
+  follow(following: String!, username: String!): Follow
+  follows(
+    following: String
+    username: String
+
+    """Paginate before opaque cursor"""
+    before: String
+
+    """Paginate after opaque cursor"""
+    after: String
+
+    """Paginate first"""
+    first: Float
+
+    """Paginate last"""
+    last: Float
+  ): FollowsOutput!
+  pin(username: String!): Pin!
 }
 
 input ExistedCheckInput {
@@ -149,6 +205,9 @@ type Mutation {
   createStar(createStarInput: CreateStarInput!): Star!
   updateStar(updateStarInput: UpdateStarInput!): Star!
   removeStar(_id: String!): Boolean!
+  createFollow(following: String!, username: String!): Follow!
+  removeFollow(_id: String!): Boolean!
+  updatePin(pined: Boolean!, creationId: String!, username: String!): Boolean!
 }
 
 input CreateUserInput {
