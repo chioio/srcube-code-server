@@ -13,22 +13,21 @@ export class StarResolver {
     return this.starService.create(createStarInput);
   }
 
+  @Query(() => Star, { name: 'star', nullable: true })
+  findOne(
+    @Args('creationId') creationId: string,
+    @Args('username') username: string,
+  ) {
+    return this.starService.findOne(creationId, username);
+  }
+
   @Query(() => [Star], { name: 'stars' })
   findAll(
-    @Args('creationId', { type: () => String }) creationId: string,
+    @Args('creationId', { type: () => String, nullable: true })
+    creationId: string,
     @Args('username', { nullable: true }) username?: string,
   ) {
     return this.starService.findAllByCreationId(creationId, username);
-  }
-
-  // @Query(() => Star, { name: 'star' })
-  // findOne(@Args('id', { type: () => String }) id: string) {
-  //   return this.starService.findOne(id);
-  // }
-
-  @Mutation(() => Star)
-  updateStar(@Args('updateStarInput') updateStarInput: UpdateStarInput) {
-    return this.starService.update(updateStarInput.id, updateStarInput);
   }
 
   @Mutation(() => Boolean)

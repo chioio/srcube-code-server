@@ -37,8 +37,8 @@ export class FollowService {
     };
   }
 
-  async remove(_id: string) {
-    const res = await this.model.deleteOne({ _id });
+  async remove(username: string, following: string) {
+    const res = await this.model.deleteOne({ username, following });
 
     return res.acknowledged;
   }

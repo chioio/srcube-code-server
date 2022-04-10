@@ -97,9 +97,15 @@ type CreationPageInfo {
   hasNextPage: Boolean!
 }
 
+type Starer {
+  title: String!
+  username: String!
+  avatar: String!
+}
+
 type Star {
   _id: String!
-  username: String!
+  user: Starer!
   creationId: String!
   createdAt: DateTime!
   updatedAt: DateTime!
@@ -141,6 +147,21 @@ type Pin {
   updatedAt: DateTime!
 }
 
+type Commenter {
+  title: String!
+  username: String!
+  avatar: String!
+}
+
+type Comment {
+  _id: String!
+  creationId: String!
+  commenter: Commenter!
+  content: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
 type Query {
   users: [User!]!
   user(username: String!): User!
@@ -162,7 +183,8 @@ type Query {
     last: Float
   ): CreationsOutput!
   creation(_id: String!): Creation!
-  stars(username: String, creationId: String!): [Star!]!
+  star(username: String!, creationId: String!): Star
+  stars(username: String, creationId: String): [Star!]!
   follow(following: String!, username: String!): Follow
   follows(
     following: String
@@ -181,6 +203,8 @@ type Query {
     last: Float
   ): FollowsOutput!
   pin(username: String!): Pin!
+  comments(creationId: String!): [Comment!]!
+  comment(id: Int!): Comment!
 }
 
 input ExistedCheckInput {
@@ -203,11 +227,13 @@ type Mutation {
   updateCreation(input: UpdateCreationInput!): Boolean!
   removeCreation(id: Int!): Creation!
   createStar(createStarInput: CreateStarInput!): Star!
-  updateStar(updateStarInput: UpdateStarInput!): Star!
   removeStar(_id: String!): Boolean!
   createFollow(following: String!, username: String!): Follow!
-  removeFollow(_id: String!): Boolean!
+  removeFollow(following: String!, username: String!): Boolean!
   updatePin(pined: Boolean!, creationId: String!, username: String!): Boolean!
+  createComment(createCommentInput: CreateCommentInput!): Comment!
+  updateComment(updateCommentInput: UpdateCommentInput!): Comment!
+  removeComment(id: Int!): Comment!
 }
 
 input CreateUserInput {
@@ -271,8 +297,15 @@ input CreateStarInput {
   creationId: String!
 }
 
-input UpdateStarInput {
-  username: String
+input CreateCommentInput {
+  creationId: String!
+  commenter: String!
+  content: String!
+}
+
+input UpdateCommentInput {
   creationId: String
+  commenter: String
+  content: String
   id: Int!
 }

@@ -49,7 +49,10 @@ export class FollowResolver {
   }
 
   @Mutation(() => Boolean)
-  removeFollow(@Args('_id', { type: () => String }) _id: string) {
-    return this.followService.remove(_id);
+  removeFollow(
+    @Args('username') username: string,
+    @Args('following') following: string,
+  ) {
+    return this.followService.remove(username, following);
   }
 }

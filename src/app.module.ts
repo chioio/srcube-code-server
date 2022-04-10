@@ -9,6 +9,7 @@ import { CreationModule } from './creation/creation.module';
 import { StarModule } from './star/star.module';
 import { FollowModule } from './follow/follow.module';
 import { PinModule } from './pin/pin.module';
+import { CommentModule } from './comment/comment.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { PinModule } from './pin/pin.module';
     StarModule,
     FollowModule,
     PinModule,
+    CommentModule,
   ],
 })
 export class AppModule {}

@@ -5,21 +5,45 @@ import { CreateStarInput } from './dto/create-star.input';
 import { UpdateStarInput } from './dto/update-star.input';
 import { Star, StarDocument } from './entities/star.entity';
 import { CreationService } from 'src/creation/creation.service';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class StarService {
   constructor(
     @InjectModel(Star.name) private model: Model<StarDocument>,
     private readonly creationService: CreationService,
+    private readonly userService: UserService,
   ) {}
 
   async create(createStarInput: CreateStarInput) {
-    await this.creationService.findOneByIdAndUpdate(
-      createStarInput.creationId,
-      { $inc: { stars: 1 } },
+    const user = await this.userService.findOneByUsername(
+      createStarInput.username,
     );
 
-    return await new this.model({ ...createStarInput }).save();
+    const res = await new this.model({
+      ...createStarInput,
+      user: {
+        title: `${user.firstName} ${user.lastName}`,
+        username: user.username,
+        avatar: user.avatar,
+      },
+    }).save();
+
+    if (res) {
+      await this.creationService.findOneByIdAndUpdate(
+        createStarInput.creationId,
+        { $inc: { stars: 1 } },
+      );
+    }
+
+    return res;
+  }
+
+  async findOne(creationId: string, username: string) {
+    return await this.model.findOne({
+      creationId: creationId,
+      username: username,
+    });
   }
 
   async findAll() {
@@ -27,17 +51,10 @@ export class StarService {
   }
 
   async findAllByCreationId(creationId: string, username?: string) {
-    return await this.model.find(
+    const stars = await this.model.find(
       username ? { creationId, username } : { creationId },
     );
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} star`;
-  }
-
-  update(id: number, updateStarInput: UpdateStarInput) {
-    return `This action updates a #${id} star`;
+    return stars;
   }
 
   async remove(_id: string) {

@@ -1,11 +1,12 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 
-export type StarDocument = Star & Document;
+export type CreationDocument = Comment & Document;
 
 @ObjectType()
-export class Starer {
+export class Commenter {
   @Field()
+  @Prop(String)
   title: string;
 
   @Field()
@@ -21,17 +22,21 @@ export class Starer {
 @Schema({
   timestamps: true,
 })
-export class Star {
+export class Comment {
   @Field()
   _id: string;
 
   @Field()
-  @Prop(() => Starer)
-  user: Starer
+  @Prop(String)
+  creationId: string;
+
+  @Field(() => Commenter)
+  @Prop(Commenter)
+  commenter: Commenter;
 
   @Field()
   @Prop(String)
-  creationId: string;
+  content: string;
 
   @Field()
   createdAt: Date;
@@ -40,4 +45,4 @@ export class Star {
   updatedAt: Date;
 }
 
-export const StarSchema = SchemaFactory.createForClass(Star);
+export const CommentSchema = SchemaFactory.createForClass(Comment);
