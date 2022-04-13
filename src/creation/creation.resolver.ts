@@ -22,7 +22,11 @@ export class CreationResolver {
     @Args('search', { nullable: true }) search?: string,
   ): Promise<CreationsOutput> {
     const { limit, offset } = args.pagingParams();
-    const { creations, count } = await this.service.findAndCount(limit, offset, search);
+    const { creations, count } = await this.service.findAndCount(
+      limit,
+      offset,
+      search,
+    );
 
     const page = connectionFromArraySlice(creations, args, {
       arrayLength: count,
@@ -31,7 +35,7 @@ export class CreationResolver {
     return { page, pageData: { count: count, limit, offset } };
   }
 
-  @Query(() => Creation, { name: 'creation' })
+  @Query(() => Creation, { name: 'creation', nullable: true })
   async findOne(@Args('_id', { type: () => String }) _id: string) {
     return await this.service.findOneById(_id);
   }
@@ -41,8 +45,8 @@ export class CreationResolver {
     return this.service.update(updateCreationInput);
   }
 
-  @Mutation(() => Creation)
-  removeCreation(@Args('id', { type: () => Int }) id: number) {
-    return this.service.remove(id);
+  @Mutation(() => Boolean)
+  removeCreation(@Args('_id', { type: () => String }) _id: string) {
+    return this.service.remove(_id);
   }
 }

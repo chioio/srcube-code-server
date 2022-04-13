@@ -10,6 +10,7 @@ import { StarModule } from './star/star.module';
 import { FollowModule } from './follow/follow.module';
 import { PinModule } from './pin/pin.module';
 import { CommentModule } from './comment/comment.module';
+import { ReadmeModule } from './readme/readme.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { CommentModule } from './comment/comment.module';
     FollowModule,
     PinModule,
     CommentModule,
+    ReadmeModule,
   ],
 })
 export class AppModule {}

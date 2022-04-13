@@ -36,7 +36,7 @@ export class CommentResolver {
   }
 
   @Mutation(() => Comment)
-  removeComment(@Args('id', { type: () => Int }) id: number) {
-    return this.commentService.remove(id);
+  removeComment(@Args('id', { type: () => String }) _id: string) {
+    return this.commentService.remove(_id);
   }
 }

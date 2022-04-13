@@ -1,14 +1,20 @@
 import { Model } from 'mongoose';
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateCreationInput } from './dto/create-creation.input';
 import { Creation, CreationDocument } from './schema/creation';
 import { UpdateCreationInput } from './dto/update-creation.input';
+import { StarService } from 'src/star/star.service';
+import { CommentService } from 'src/comment/comment.service';
 
 @Injectable()
 export class CreationService {
   constructor(
     @InjectModel(Creation.name) private model: Model<CreationDocument>,
+    @Inject(forwardRef(() => StarService))
+    private readonly starService: StarService,
+    @Inject(forwardRef(() => CommentService))
+    private readonly commentService: CommentService,
   ) {}
 
   async create(createCreationInput: CreateCreationInput) {
@@ -50,7 +56,7 @@ export class CreationService {
   }
 
   async findOneByIdAndUpdate(_id: string, update: Object) {
-    const res = await this.model.findByIdAndUpdate(_id, update);
+    return await this.model.findByIdAndUpdate(_id, update);
   }
 
   async update(updateCreationInput: UpdateCreationInput): Promise<Boolean> {
@@ -62,7 +68,13 @@ export class CreationService {
     return res.acknowledged;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} creation`;
+  async remove(_id: string): Promise<Boolean> {
+    const deleteStar = await this.starService.removeAllByCreationId(_id);
+    const deleteComment = await this.commentService.removeAllByCreationId(_id);
+
+    if (deleteStar && deleteComment) {
+      return (await this.model.deleteOne({ _id })).acknowledged;
+    }
+    return false;
   }
 }

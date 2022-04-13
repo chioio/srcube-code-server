@@ -69,6 +69,20 @@ type Creation {
   updatedAt: DateTime!
 }
 
+type Starer {
+  title: String!
+  username: String!
+  avatar: String!
+}
+
+type Star {
+  _id: String!
+  user: Starer!
+  creationId: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
 type PageData {
   count: Float!
   limit: Float!
@@ -97,16 +111,17 @@ type CreationPageInfo {
   hasNextPage: Boolean!
 }
 
-type Starer {
+type Commenter {
   title: String!
   username: String!
   avatar: String!
 }
 
-type Star {
+type Comment {
   _id: String!
-  user: Starer!
   creationId: String!
+  commenter: Commenter!
+  content: String!
   createdAt: DateTime!
   updatedAt: DateTime!
 }
@@ -147,19 +162,10 @@ type Pin {
   updatedAt: DateTime!
 }
 
-type Commenter {
-  title: String!
-  username: String!
-  avatar: String!
-}
-
-type Comment {
+type Readme {
   _id: String!
-  creationId: String!
-  commenter: Commenter!
+  user: String!
   content: String!
-  createdAt: DateTime!
-  updatedAt: DateTime!
 }
 
 type Query {
@@ -182,9 +188,11 @@ type Query {
     """Paginate last"""
     last: Float
   ): CreationsOutput!
-  creation(_id: String!): Creation!
+  creation(_id: String!): Creation
   star(username: String!, creationId: String!): Star
   stars(username: String, creationId: String): [Star!]!
+  comments(creationId: String!): [Comment!]!
+  comment(id: Int!): Comment!
   follow(following: String!, username: String!): Follow
   follows(
     following: String
@@ -203,8 +211,7 @@ type Query {
     last: Float
   ): FollowsOutput!
   pin(username: String!): Pin!
-  comments(creationId: String!): [Comment!]!
-  comment(id: Int!): Comment!
+  readme(username: String!): Readme
 }
 
 input ExistedCheckInput {
@@ -225,15 +232,18 @@ type Mutation {
   signUp(input: SignUpInput!): SignUpOutput!
   createCreation(input: CreateCreationInput!): Creation!
   updateCreation(input: UpdateCreationInput!): Boolean!
-  removeCreation(id: Int!): Creation!
+  removeCreation(_id: String!): Boolean!
   createStar(createStarInput: CreateStarInput!): Star!
   removeStar(_id: String!): Boolean!
+  cancelStar(username: String!, creationId: String!): Boolean!
+  createComment(createCommentInput: CreateCommentInput!): Comment!
+  updateComment(updateCommentInput: UpdateCommentInput!): Comment!
+  removeComment(id: String!): Comment!
   createFollow(following: String!, username: String!): Follow!
   removeFollow(following: String!, username: String!): Boolean!
   updatePin(pined: Boolean!, creationId: String!, username: String!): Boolean!
-  createComment(createCommentInput: CreateCommentInput!): Comment!
-  updateComment(updateCommentInput: UpdateCommentInput!): Comment!
-  removeComment(id: Int!): Comment!
+  updateReadme(content: String, username: String!): Readme!
+  removeReadme(username: String!): Readme!
 }
 
 input CreateUserInput {

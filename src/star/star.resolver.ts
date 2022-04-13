@@ -34,4 +34,12 @@ export class StarResolver {
   removeStar(@Args('_id', { type: () => String }) _id: string) {
     return this.starService.remove(_id);
   }
+
+  @Mutation(() => Boolean)
+  cancelStar(
+    @Args('creationId', { type: () => String }) creationId: string,
+    @Args('username') username: string,
+  ) {
+    return this.starService.removeByUserAndCreationId(username, creationId);
+  }
 }

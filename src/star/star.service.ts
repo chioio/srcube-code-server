@@ -1,8 +1,7 @@
 import { Model } from 'mongoose';
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateStarInput } from './dto/create-star.input';
-import { UpdateStarInput } from './dto/update-star.input';
 import { Star, StarDocument } from './entities/star.entity';
 import { CreationService } from 'src/creation/creation.service';
 import { UserService } from 'src/user/user.service';
@@ -11,8 +10,10 @@ import { UserService } from 'src/user/user.service';
 export class StarService {
   constructor(
     @InjectModel(Star.name) private model: Model<StarDocument>,
-    private readonly creationService: CreationService,
-    private readonly userService: UserService,
+
+    @Inject(forwardRef(() => CreationService))
+    private creationService: CreationService,
+    private userService: UserService,
   ) {}
 
   async create(createStarInput: CreateStarInput) {
@@ -57,6 +58,10 @@ export class StarService {
     return stars;
   }
 
+  async removeAllByCreationId(creationId: string): Promise<Boolean> {
+    return (await this.model.deleteMany({ creationId })).acknowledged;
+  }
+
   async remove(_id: string) {
     const star = await this.model.findOne({ _id });
     await this.creationService.findOneByIdAndUpdate(star.creationId, {
@@ -64,6 +69,23 @@ export class StarService {
     });
 
     const res = await this.model.deleteOne({ _id });
+
+    return res.acknowledged;
+  }
+
+  async removeByUserAndCreationId(username: string, creationId: string) {
+    const star = await this.model.findOne({
+      username: username,
+      creationId: creationId,
+    });
+    await this.creationService.findOneByIdAndUpdate(star.creationId, {
+      $inc: { stars: -1 },
+    });
+
+    const res = await this.model.deleteOne({
+      username: username,
+      creationId: creationId,
+    });
 
     return res.acknowledged;
   }

@@ -1,16 +1,19 @@
 import { Model } from 'mongoose';
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { CreateCommentInput } from './dto/create-comment.input';
 import { UpdateCommentInput } from './dto/update-comment.input';
 import { CreationService } from 'src/creation/creation.service';
 import { UserService } from 'src/user/user.service';
+import { CreateCommentInput } from './dto/create-comment.input';
+import { Comment } from './entities/comment.entity';
 
 @Injectable()
 export class CommentService {
   constructor(
     @InjectModel('Comment') private readonly model: Model<Comment>,
+    @Inject(forwardRef(() => CreationService))
     private readonly creationService: CreationService,
+    @Inject(forwardRef(() => UserService))
     private readonly userService: UserService,
   ) {}
 
@@ -50,7 +53,11 @@ export class CommentService {
     return `This action updates a #${id} comment`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} comment`;
+  async removeAllByCreationId(_id: string): Promise<Boolean> {
+    return (await this.model.deleteMany({ _id })).acknowledged;
+  }
+
+  async remove(_id: string): Promise<Boolean> {
+    return (await this.model.deleteOne({ _id })).acknowledged;
   }
 }
