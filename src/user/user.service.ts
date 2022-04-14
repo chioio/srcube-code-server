@@ -7,23 +7,27 @@ import { User, UserDocument } from './schema/user';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  constructor(@InjectModel(User.name) private userModel: Model<User>) {}
 
   async create(createUserInput: CreateUserInput) {
     const createdUser = new this.userModel(createUserInput);
     return await createdUser.save();
   }
 
+  async findById(id: string) {
+    return await this.userModel.findById(id);
+  }
+
   async findAll() {
     return await this.userModel.find().exec();
   }
 
-  async findOneByUsername(username: string) {
-    return await this.userModel.findOne({ username });
+  async findOneByUsername(username: string): Promise<User> {
+    return await this.userModel.findOne({ username }).lean();
   }
 
   async findOneByEmail(email: string) {
-    return await this.userModel.findOne({ email });
+    return await this.userModel.findOne({ email }).lean();
   }
 
   update(id: number, updateUserInput: UpdateUserInput) {

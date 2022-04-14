@@ -1,14 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { createAvatar } from '@dicebear/avatars';
 import * as style from '@dicebear/avatars-identicon-sprites';
 import { AuthHelper } from './auth.helper';
 import { UserService } from '../user/user.service';
-import {
-  SignInInput,
-  SignInOutput,
-  UserProfileOutput,
-} from './dto/sign-in.dto';
+import { SignInInput, SignInOutput } from './dto/sign-in.dto';
 import { SignUpInput, SignUpOutput } from './dto/sign-up.dto';
 import { User } from 'src/user/schema/user';
 import {
@@ -24,15 +20,12 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async validateUser(username): Promise<UserProfileOutput> {
-    const user = await this.userService.findOneByUsername(username);
+  findUserById(userId: string) {
+    return this.userService.findById(userId);
+  }
 
-    if (!user) {
-      return null;
-    }
-
-    const result = user as UserProfileOutput;
-    return result;
+  async validateUser(username: string) {
+    await this.userService.findOneByUsername(username);
   }
 
   async whoAmI(user: User) {
@@ -66,11 +59,14 @@ export class AuthService {
       throw new UnauthorizedException({ message: 'Password invalid!' });
     }
 
-    const payload = { username: profile.username };
+    Logger.log(profile, 'AuthService.signIn');
 
     return {
-      token: this.jwtService.sign(payload),
-      profile: profile['_doc'],
+      token: this.jwtService.sign({
+        userId: profile._id,
+        user: profile.username,
+      }),
+      profile: profile,
     };
   }
 
