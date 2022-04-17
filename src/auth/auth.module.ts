@@ -1,25 +1,14 @@
-import { GqlAuthGuard } from './guards/gql-auth.guard';
-import { Module } from '@nestjs/common';
+import { OtStrategy } from './strategies/ot.strategy';
 import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
+import { Module } from '@nestjs/common';
+
+import { AtStrategy, RtStrategy } from './strategies';
+import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { AuthResolver } from './auth.resolver';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { UserModule } from '../user/user.module';
-import { JWT_SECRET } from '../constants';
 
 @Module({
-  imports: [
-    UserModule,
-    PassportModule,
-    JwtModule.register({
-      secret: JWT_SECRET,
-      signOptions: {
-        expiresIn: '60s',
-      },
-    }),
-  ],
-  providers: [AuthResolver, AuthService, JwtStrategy, GqlAuthGuard],
-  exports: [AuthService],
+  imports: [JwtModule.register({})],
+  controllers: [AuthController],
+  providers: [AuthService, AtStrategy, RtStrategy, OtStrategy],
 })
 export class AuthModule {}

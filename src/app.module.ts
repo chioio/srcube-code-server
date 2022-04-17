@@ -1,34 +1,23 @@
-import { join } from 'path';
+import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
-import { GraphQLModule } from '@nestjs/graphql';
-import { UserModule } from './user/user.module';
+
+import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
-import { ApolloServerPluginLandingPageLocalDefault } from 'apollo-server-core';
-import { CreationModule } from './creation/creation.module';
-import { StarModule } from './star/star.module';
-import { FollowModule } from './follow/follow.module';
-import { PinModule } from './pin/pin.module';
-import { CommentModule } from './comment/comment.module';
-import { ReadmeModule } from './readme/readme.module';
+import { PlatformModule } from './platform/platform.module';
+import { AtGuard, OtGuard } from './common/guards';
 
 @Module({
-  imports: [
-    MongooseModule.forRoot('mongodb://localhost:27017/srcube-code'),
-    GraphQLModule.forRoot({
-      installSubscriptionHandlers: true,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      playground: false,
-      plugins: [ApolloServerPluginLandingPageLocalDefault],
-    }),
-    UserModule,
-    AuthModule,
-    CreationModule,
-    StarModule,
-    FollowModule,
-    PinModule,
-    CommentModule,
-    ReadmeModule,
+  imports: [ConfigModule.forRoot(), AuthModule, PrismaModule, PlatformModule],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AtGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: OtGuard,
+    },
   ],
 })
 export class AppModule {}
