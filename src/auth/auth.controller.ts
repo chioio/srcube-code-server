@@ -1,3 +1,4 @@
+import { OtGuard } from './../common/guards/ot.guard';
 import {
   Controller,
   Post,
@@ -6,6 +7,7 @@ import {
   HttpStatus,
   UseGuards,
   Get,
+  Query,
 } from '@nestjs/common';
 
 import { CurrentUser, Public } from 'src/common/decorators';
@@ -25,10 +27,10 @@ export class AuthController {
 
   // whoami
   @UseGuards(AtGuard)
-  @Get('/whoami')
+  @Get('whoami')
   @HttpCode(HttpStatus.OK)
-  async whoami(@CurrentUser('user') user: string) {
-    return this.authService.whoami(user);
+  async whoami(@CurrentUser('sub') userId: string) {
+    return this.authService.whoami(userId);
   }
 
   // existed check
@@ -41,7 +43,7 @@ export class AuthController {
 
   // signup
   @Public()
-  @Post('signup')
+  @Post('sign-up')
   @HttpCode(HttpStatus.CREATED)
   async signup(@Body() dto: TSignUpDto): Promise<TTokensVo> {
     return this.authService.signup(dto);
@@ -49,7 +51,7 @@ export class AuthController {
 
   // signin
   @Public()
-  @Post('signin')
+  @Post('sign-in')
   @HttpCode(HttpStatus.OK)
   async signin(@Body() dto: TSignInDto): Promise<TTokensVo> {
     return this.authService.signin(dto);

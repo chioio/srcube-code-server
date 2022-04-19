@@ -9,6 +9,7 @@ import {
   Body,
   Param,
   Delete,
+  Put,
 } from '@nestjs/common';
 
 import { CurrentUser, Public } from 'src/common/decorators';
@@ -26,7 +27,7 @@ import {
   TUploadUserImageDto,
 } from './typings';
 
-@Controller('platform')
+@Controller()
 export class PlatformController {
   constructor(private readonly platformService: PlatformService) {}
 
@@ -92,45 +93,12 @@ export class PlatformController {
     return this.platformService.deleteCreation(userId, id);
   }
 
-  // get user creations
-  @Public()
-  @UseGuards(OtGuard)
-  @Get('user/creations')
-  @HttpCode(HttpStatus.OK)
-  getUserCreations(
-    @CurrentUser('sub') userId: string,
-    @Query('page') page: number,
-  ) {
-    return this.platformService.getUserCreations(userId, page);
-  }
-
-  // get user stars
-  @Public()
-  @UseGuards(OtGuard)
-  @Get('user/stars')
-  @HttpCode(HttpStatus.OK)
-  getUserStars(
-    @CurrentUser('sub') userId: string,
-    @Query('page') page: number,
-  ) {
-    return this.platformService.getUserStars(userId, page);
-  }
-
-  // get user pins
-  @Public()
-  @UseGuards(OtGuard)
-  @Get('user/pins')
-  @HttpCode(HttpStatus.OK)
-  getUserPins(@CurrentUser('sub') userId: string, @Query('page') page: number) {
-    return this.platformService.getUserPins(userId, page);
-  }
-
   // get user profile
   @Public()
   @Get('user/profile')
   @HttpCode(HttpStatus.OK)
-  getUserProfile(@Query('id') userId: string) {
-    return this.platformService.getUserProfile(userId);
+  getUserProfile(@Query('user') username: string) {
+    return this.platformService.getUserProfile(username);
   }
 
   // update user profile
@@ -144,9 +112,54 @@ export class PlatformController {
     return this.platformService.updateUserProfile(userId, dto);
   }
 
+  // get user readme
+  @Public()
+  @Get('user/readme')
+  getUserReadme(@Query('user') username: string) {
+    return this.platformService.getUserReadme(username);
+  }
+
+  // get user creations
+  @Public()
+  @UseGuards(OtGuard)
+  @Get('user/creations')
+  @HttpCode(HttpStatus.OK)
+  getUserCreations(
+    @CurrentUser('sub') userId: string,
+    @Query('user') username: string,
+    @Query('page') page: number,
+  ) {
+    return this.platformService.getUserCreations(userId, username, page);
+  }
+
+  // get user stars
+  @Public()
+  @UseGuards(OtGuard)
+  @Get('user/stars')
+  @HttpCode(HttpStatus.OK)
+  getUserStars(
+    @CurrentUser('sub') userId: string,
+    @Query('user') username: string,
+    @Query('page') page: number,
+  ) {
+    return this.platformService.getUserStars(userId, username, page);
+  }
+
+  // get user pins
+  @Public()
+  @UseGuards(OtGuard)
+  @Get('user/pins')
+  @HttpCode(HttpStatus.OK)
+  getUserPins(
+    @CurrentUser('sub') userId: string,
+    @Query('user') username: string,
+  ) {
+    return this.platformService.getUserPins(userId, username);
+  }
+
   // update user readme
   @UseGuards(AtGuard)
-  @Post('user/readme')
+  @Put('user/readme')
   @HttpCode(HttpStatus.OK)
   updateUserReadme(
     @CurrentUser('sub') userId: string,

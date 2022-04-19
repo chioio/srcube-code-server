@@ -8,6 +8,7 @@ import {
   TToggleStarDto,
   TTogglePinDto,
   TToggleFollowDto,
+  TUpdateUserReadmeDto,
 } from './typings';
 
 @Injectable()
@@ -41,7 +42,7 @@ export class PlatformService {
         select: {
           id: true,
           username: true,
-          user_image: {
+          profile: {
             select: {
               avatar: true,
             },
@@ -160,7 +161,7 @@ export class PlatformService {
         select: {
           id: true,
           username: true,
-          user_image: {
+          profile: {
             select: {
               avatar: true,
             },
@@ -204,8 +205,7 @@ export class PlatformService {
     const isStared = userId
       ? await this.prisma.star.findUnique({
           where: {
-            owner_id: userId,
-            creation_id: creationId,
+            id: creationId,
           },
         })
       : null;
@@ -232,7 +232,7 @@ export class PlatformService {
               username: true,
               first_name: true,
               last_name: true,
-              user_image: {
+              profile: {
                 select: {
                   avatar: true,
                 },
@@ -252,7 +252,7 @@ export class PlatformService {
               username: true,
               first_name: true,
               last_name: true,
-              user_image: {
+              profile: {
                 select: {
                   avatar: true,
                 },
@@ -295,27 +295,94 @@ export class PlatformService {
   // delete creation
   async deleteCreation(userId: string, creationId: string) {}
 
+  // get user profile
+  async getUserProfile(username: string) {
+    const includes: Prisma.UserInclude = {
+      profile: {
+        select: {
+          bio: true,
+          org: true,
+          location: true,
+          website: true,
+          avatar: true,
+          banner: true,
+        },
+      },
+      _count: {
+        select: {
+          followers: true,
+          followees: true,
+        },
+      },
+    };
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        username,
+      },
+      include: includes,
+    });
+
+    return user;
+  }
+
+  // get user readme
+  async getUserReadme(username: string) {
+    // const includes: Prisma.UserInclude = {};
+
+    const user = await this.prisma.user.findUnique({
+      where: {
+        username,
+      },
+      include: {
+        readme: true,
+      },
+    });
+
+    return user.readme;
+  }
+
   // get user creations
-  async getUserCreations(userId: string, page: number) {
+  async getUserCreations(userId: string, username: string, page: number) {
     const includes: Prisma.CreationInclude = {
       owner: {
         select: {
           id: true,
           username: true,
-          user_image: {
+          profile: {
             select: {
               avatar: true,
             },
           },
         },
       },
+      stars: userId
+        ? {
+            select: {
+              id: true,
+            },
+            where: {
+              owner_id: {
+                equals: userId,
+              },
+            },
+          }
+        : null,
+      _count: {
+        select: {
+          stars: true,
+          comments: true,
+        },
+      },
     };
 
     const creations = await this.prisma.creation.findMany({
       take: 8,
-      skip: 8 * (page - 1),
+      skip: page ? 8 * (page - 1) : 0,
       where: {
-        owner_id: userId,
+        owner: {
+          username,
+        },
       },
       include: includes,
       orderBy: {
@@ -327,49 +394,144 @@ export class PlatformService {
   }
 
   // get user stars
-  async getUserStars(userId: string, page: number) {
-    const includes: Prisma.CreationInclude = {
-      owner: {
+  async getUserStars(userId: string, username: string, page: number) {
+    const includes: Prisma.StarInclude = {
+      creation: {
         select: {
           id: true,
-          username: true,
-          user_image: {
+          title: true,
+          code_html: true,
+          code_css: true,
+          code_js: true,
+          owner: {
             select: {
-              avatar: true,
+              id: true,
+              username: true,
+              profile: {
+                select: {
+                  avatar: true,
+                },
+              },
+            },
+          },
+          stars: userId
+            ? {
+                select: {
+                  id: true,
+                },
+                where: {
+                  owner_id: {
+                    equals: userId,
+                  },
+                },
+              }
+            : null,
+          _count: {
+            select: {
+              stars: true,
+              comments: true,
             },
           },
         },
       },
     };
+
+    const stars = await this.prisma.star.findMany({
+      take: 8,
+      skip: page ? 8 * (page - 1) : 0,
+      where: {
+        owner: {
+          username,
+        },
+      },
+      include: includes,
+      orderBy: {
+        id: 'asc',
+      },
+    });
+
+    return stars;
   }
 
   // get user pins
-  async getUserPins(userId: string, page: number) {
-    const includes: Prisma.CreationInclude = {
-      owner: {
+  async getUserPins(userId: string, username: string) {
+    const includes: Prisma.PinInclude = {
+      creation: {
         select: {
           id: true,
-          username: true,
-          user_image: {
+          title: true,
+          code_html: true,
+          code_css: true,
+          code_js: true,
+          owner: {
             select: {
-              avatar: true,
+              id: true,
+              username: true,
+              profile: {
+                select: {
+                  avatar: true,
+                },
+              },
+            },
+          },
+          stars: userId
+            ? {
+                select: {
+                  id: true,
+                },
+                where: {
+                  owner_id: {
+                    equals: userId,
+                  },
+                },
+              }
+            : null,
+          _count: {
+            select: {
+              stars: true,
+              comments: true,
             },
           },
         },
       },
     };
-  }
 
-  // get user profile
-  async getUserProfile(userId: string) {
-    const includes: Prisma.UserInclude = {};
+    const pins = await this.prisma.pin.findMany({
+      take: 6,
+      where: {
+        owner: {
+          username,
+        },
+      },
+      include: includes,
+      orderBy: {
+        id: 'asc',
+      },
+    });
+
+    return pins;
   }
 
   // update user profile
   async updateUserProfile(userId: string, dto: any) {}
 
   // update user readme
-  async updateUserReadme(userId: string, dto: any) {}
+  async updateUserReadme(userId: string, dto: TUpdateUserReadmeDto) {
+    const readme = await this.prisma.readme.upsert({
+      where: {
+        owner_id: userId,
+      },
+      update: {
+        content: dto.content,
+      },
+      create: {
+        owner_id: userId,
+        content: dto.content,
+      },
+    });
+
+    return readme;
+  }
 
   // upload user image
   async uploadUserImage(userId: string, file: any) {}
@@ -394,8 +556,7 @@ export class PlatformService {
     } else {
       await this.prisma.star.delete({
         where: {
-          owner_id: userId,
-          creation_id: id,
+          id,
         },
       });
     }
@@ -414,8 +575,7 @@ export class PlatformService {
     } else {
       await this.prisma.pin.delete({
         where: {
-          owner_id: userId,
-          creation_id: id,
+          id,
         },
       });
     }

@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { createAvatar } from '@dicebear/avatars';
-import * as style from '@dicebear/avatars-bottts-sprites';
+import * as style from '@dicebear/avatars-identicon-sprites';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptedHelper, PrismaHelper } from 'src/common/helpers';
@@ -23,17 +23,15 @@ export class AuthService {
   ) {}
 
   // whoami
-  async whoami(username: string): Promise<TWhoAmI> {
+  async whoami(userId: string): Promise<TWhoAmI> {
     const user = await this.prisma.user.findUnique({
       where: {
-        username,
+        id: userId,
       },
       include: {
-        user_image: true,
+        profile: true,
       },
     });
-
-    PrismaHelper.exclude(user.user_image, 'id', 'created_at', 'updated_at');
 
     const safetyUser = PrismaHelper.exclude(
       user,
@@ -108,16 +106,16 @@ export class AuthService {
       seed: input.username,
       size: 128,
       dataUri: true,
+      backgroundColor: '#f1f5f9',
     });
 
     const newUser = await this.prisma.user.create({
       data: {
         ...input,
         password: await EncryptedHelper.encrypt(input.password),
-        user_image: {
+        profile: {
           create: {
             avatar,
-            banner: '',
           },
         },
         readme: {

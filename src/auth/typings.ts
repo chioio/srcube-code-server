@@ -1,4 +1,4 @@
-import { User, UserImage } from '@prisma/client';
+import { User, Profile } from '@prisma/client';
 
 export type TJwtPayload = {
   sub: string;
@@ -7,7 +7,7 @@ export type TJwtPayload = {
 
 export type TWhoAmI = Omit<
   User & {
-    user_image: UserImage;
+    profile: Profile;
   },
   'password' | 'hashed_rt' | 'created_at' | 'updated_at'
 >;

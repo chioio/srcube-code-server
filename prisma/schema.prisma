@@ -23,8 +23,8 @@ model User {
   password   String
   hashed_rt  String? @unique
 
-  user_image UserImage?
-  readme     Readme?
+  profile Profile?
+  readme  Readme?
 
   creations Creation[]
   comments  Comment[]
@@ -37,18 +37,22 @@ model User {
   @@map("users")
 }
 
-model UserImage {
+model Profile {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  user_id String @unique @db.ObjectId
-  avatar  String
-  banner  String
+  owner_id String  @unique @db.ObjectId
+  bio      String?
+  org      String?
+  location String?
+  website  String?
+  avatar   String
+  banner   String?
 
-  owner User? @relation(fields: [user_id], references: [id])
+  owner User? @relation(fields: [owner_id], references: [id])
 
-  @@map("user_images")
+  @@map("profiles")
 }
 
 model Readme {
@@ -56,10 +60,10 @@ model Readme {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  user_id String @unique @db.ObjectId
-  content String
+  owner_id String @unique @db.ObjectId
+  content  String
 
-  owner User? @relation(fields: [user_id], references: [id])
+  owner User? @relation(fields: [owner_id], references: [id])
 
   @@map("readmes")
 }
@@ -83,7 +87,7 @@ model Creation {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  owner_id  String @unique @db.ObjectId
+  owner_id  String @db.ObjectId
   title     String
   code_html String
   code_css  String
@@ -102,8 +106,8 @@ model Comment {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  owner_id    String @unique @db.ObjectId
-  creation_id String @unique @db.ObjectId
+  owner_id    String @db.ObjectId
+  creation_id String @db.ObjectId
   title       String
   content     String
 
@@ -118,8 +122,8 @@ model Star {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  owner_id    String @unique @db.ObjectId
-  creation_id String @unique @db.ObjectId
+  owner_id    String @db.ObjectId
+  creation_id String @db.ObjectId
 
   owner    User?     @relation(fields: [owner_id], references: [id])
   creation Creation? @relation(fields: [creation_id], references: [id])
@@ -132,8 +136,8 @@ model Pin {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  owner_id     String @unique @db.ObjectId
-  creation_id String @unique @db.ObjectId
+  owner_id    String @db.ObjectId
+  creation_id String @db.ObjectId
 
   owner    User?     @relation(fields: [owner_id], references: [id])
   creation Creation? @relation(fields: [creation_id], references: [id])
