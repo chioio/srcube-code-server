@@ -31,8 +31,11 @@ model User {
   pins      Pin[]
   stars     Star[]
 
-  followers Follow[] @relation("follower")
-  followees Follow[] @relation("followee")
+  followers Follow[] @relation("followee") // Who's followee is this user?
+  followees Follow[] @relation("follower") // Who's follower is this user?
+
+  notify_follow_follower NotifyFollow[] @relation("notify_follow_follower")
+  notify_follow_notifier NotifyFollow[] @relation("notify_follow_notifier")
 
   @@map("users")
 }
@@ -73,8 +76,8 @@ model Follow {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  follower_id String @unique @db.ObjectId
-  followee_id String @unique @db.ObjectId
+  follower_id String @db.ObjectId
+  followee_id String @db.ObjectId
 
   follower User? @relation("follower", fields: [follower_id], references: [id])
   followee User? @relation("followee", fields: [followee_id], references: [id])
@@ -143,4 +146,20 @@ model Pin {
   creation Creation? @relation(fields: [creation_id], references: [id])
 
   @@map("pins")
+}
+
+model NotifyFollow {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  done Boolean
+
+  follower    User?  @relation("notify_follow_follower", fields: [follower_id], references: [id])
+  follower_id String @db.ObjectId
+
+  notifier_id String @db.ObjectId
+  notifier    User?  @relation("notify_follow_notifier", fields: [notifier_id], references: [id])
+
+  @@map("notify_follows")
 }

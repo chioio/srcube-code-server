@@ -34,28 +34,41 @@ export type TUploadUserImageDto = {
   type: EUserImageType;
 };
 
+export type TGetFollowDto = { followee_id: string };
+
 export type TToggleStarDto = {
   // creation id
-  id: string;
-  // true: star, false: unstar
-  toggle: boolean;
+  creation_id: string;
+  // star id
+  star_id: string;
 };
 
 export type TTogglePinDto = {
   // creation id
-  id: string;
-  // true: pin, false: unpin
-  toggle: boolean;
+  creation_id: string;
+  // star id
+  pin_id: string;
 };
 
 export type TToggleFollowDto = {
-  // following user id
-  id: string;
-  // true: follow, false: unfollow
-  toggle: boolean;
+  // follow the user id
+  followee_id: string;
+  // follow model id
+  follow_id: string;
 };
 
 export enum EGetFollowsType {
   FOLLOWERS = 'FOLLOWERS',
   FOLLOWEES = 'FOLLOWEES',
 }
+
+export enum EGetCreationsType {
+  STARS = 'STARS',
+  PINS = 'PINS',
+  CREATIONS = 'CREATIONS',
+}
+
+export type TFollowNotifyDto = {
+  done?: boolean;
+  notifier_id: string;
+};

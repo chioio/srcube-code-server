@@ -10,12 +10,19 @@ import {
   Param,
   Delete,
   Put,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  Res,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import multer from 'multer';
 
 import { CurrentUser, Public } from 'src/common/decorators';
 import { AtGuard, OtGuard } from 'src/common/guards';
 import { PlatformService } from './platform.service';
 import {
+  EGetCreationsType,
   EGetFollowsType,
   TCreateCreationDto,
   TToggleFollowDto,
@@ -24,9 +31,28 @@ import {
   TUpdateCreationDto,
   TUpdateProfileDto,
   TUpdateUserReadmeDto,
-  TUploadUserImageDto,
 } from './typings';
+import { Response } from 'express';
+import { nanoid } from 'nanoid';
 
+const multerImageOptions = {
+  storage: multer.diskStorage({
+    destination: './uploads/avatar',
+    filename: (req, file, cb) => {
+      const fileExtension = file.originalname.split('.').pop();
+
+      return cb(null, `${nanoid(16)}.${fileExtension}`);
+    },
+  }),
+  fileFilter: (req, file, cb) => {
+    const isPhoto = file.mimetype.startsWith('image/');
+    if (isPhoto) {
+      cb(null, true);
+    } else {
+      cb(new BadRequestException('Please upload only images'), false);
+    }
+  },
+};
 @Controller()
 export class PlatformController {
   constructor(private readonly platformService: PlatformService) {}
@@ -119,7 +145,7 @@ export class PlatformController {
     return this.platformService.getUserReadme(username);
   }
 
-  // get user creations
+  // get user stars, pins, creations
   @Public()
   @UseGuards(OtGuard)
   @Get('user/creations')
@@ -128,33 +154,20 @@ export class PlatformController {
     @CurrentUser('sub') userId: string,
     @Query('user') username: string,
     @Query('page') page: number,
+    @Query('type') type: EGetCreationsType,
   ) {
-    return this.platformService.getUserCreations(userId, username, page);
+    return this.platformService.getUserCreations(userId, username, page, type);
   }
 
-  // get user stars
-  @Public()
-  @UseGuards(OtGuard)
-  @Get('user/stars')
+  // get user or owner follower
+  @UseGuards(AtGuard)
+  @Get('user/follow')
   @HttpCode(HttpStatus.OK)
-  getUserStars(
+  getUserFollow(
     @CurrentUser('sub') userId: string,
-    @Query('user') username: string,
-    @Query('page') page: number,
+    @Query('followee_id') followeeId: string,
   ) {
-    return this.platformService.getUserStars(userId, username, page);
-  }
-
-  // get user pins
-  @Public()
-  @UseGuards(OtGuard)
-  @Get('user/pins')
-  @HttpCode(HttpStatus.OK)
-  getUserPins(
-    @CurrentUser('sub') userId: string,
-    @Query('user') username: string,
-  ) {
-    return this.platformService.getUserPins(userId, username);
+    return this.platformService.getUserFollow(userId, followeeId);
   }
 
   // update user readme
@@ -168,32 +181,73 @@ export class PlatformController {
     return this.platformService.updateUserReadme(userId, dto);
   }
 
-  // upload user image
+  // upload user avatar
   @UseGuards(AtGuard)
-  @Post('user/image')
+  @Post('user/upload-avatar')
+  @UseInterceptors(FileInterceptor('file', multerImageOptions))
   @HttpCode(HttpStatus.OK)
-  uploadUserImage(
+  uploadUserAvatar(
     @CurrentUser('sub') userId: string,
-    @Body() dto: TUploadUserImageDto,
+    @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.platformService.uploadUserImage(userId, dto);
+    if (!file) {
+      throw new BadRequestException('File is not an image');
+    } else {
+      return this.platformService.uploadUserAvatar(userId, file);
+    }
+  }
+
+  // upload user banner
+  @UseGuards(AtGuard)
+  @Post('user/upload-banner')
+  @UseInterceptors(FileInterceptor('file', multerImageOptions))
+  @HttpCode(HttpStatus.OK)
+  uploadUserBanner(
+    @CurrentUser('sub') userId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is not an image');
+    } else {
+      const res = {
+        avatar: file.path,
+      };
+      return res;
+    }
+  }
+
+  // read image file
+  @Public()
+  @Get('uploads/:type/:filename')
+  async getImage(
+    @Param('type') type: 'avatar' | 'banner',
+    @Param('filename') filename,
+    @Res() res: Response,
+  ) {
+    res.sendFile(filename, {
+      root:
+        (type === 'avatar' && './uploads/avatar') ||
+        (type === 'banner' && './uploads/banner'),
+    });
   }
 
   // get user followers
   @Public()
+  @UseGuards(OtGuard)
   @Get('user/follows')
   @HttpCode(HttpStatus.OK)
   getUserFollows(
-    @Query('id') userId: string,
+    @CurrentUser('sub') userId: string,
+    @Query('user') username: string,
     @Query('page') page: number,
     @Query('type') type: EGetFollowsType,
   ) {
-    return this.platformService.getUserFollows(userId, page, type);
+    return this.platformService.getUserFollows(userId, username, page, type);
   }
 
   // toggle star
   @UseGuards(AtGuard)
-  @Post('toggle-star')
+  @Put('user/toggle-star')
   @HttpCode(HttpStatus.CREATED)
   async toggleStar(
     @CurrentUser('sub') userId: string,
@@ -204,7 +258,7 @@ export class PlatformController {
 
   // toggle pin
   @UseGuards(AtGuard)
-  @Post('toggle-pin')
+  @Put('user/toggle-pin')
   @HttpCode(HttpStatus.CREATED)
   async togglePin(
     @CurrentUser('sub') userId: string,
@@ -215,7 +269,7 @@ export class PlatformController {
 
   // toggle follow
   @UseGuards(AtGuard)
-  @Post('toggle-follow')
+  @Put('user/toggle-follow')
   @HttpCode(HttpStatus.CREATED)
   async toggleFollow(
     @CurrentUser('sub') userId: string,
@@ -226,7 +280,7 @@ export class PlatformController {
 
   // delete account
   @UseGuards(AtGuard)
-  @Delete('account')
+  @Delete('user/account')
   @HttpCode(HttpStatus.OK)
   async deleteAccount(@CurrentUser('sub') userId: string) {
     return this.platformService.deleteAccount(userId);

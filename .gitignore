@@ -1,5 +1,6 @@
 # compiled output
 /data
+/uploads
 /dist
 /node_modules
 

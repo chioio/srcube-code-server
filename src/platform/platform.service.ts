@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
@@ -7,9 +7,12 @@ import {
   EGetFollowsType,
   TToggleStarDto,
   TTogglePinDto,
-  TToggleFollowDto,
   TUpdateUserReadmeDto,
+  EGetCreationsType,
+  TToggleFollowDto,
+  TFollowNotifyDto,
 } from './typings';
+import fs from 'fs';
 
 @Injectable()
 export class PlatformService {
@@ -31,13 +34,17 @@ export class PlatformService {
               },
             },
           }
-        : {
-            select: {
-              id: true,
-              owner_id: true,
-              creation_id: true,
+        : null,
+      pins: userId
+        ? {
+            select: { id: true },
+            where: {
+              owner_id: {
+                equals: userId,
+              },
             },
-          },
+          }
+        : null,
       owner: {
         select: {
           id: true,
@@ -47,18 +54,6 @@ export class PlatformService {
               avatar: true,
             },
           },
-          followers: userId
-            ? {
-                select: {
-                  id: true,
-                },
-                where: {
-                  follower_id: {
-                    equals: userId,
-                  },
-                },
-              }
-            : null,
         },
       },
       _count: {
@@ -150,6 +145,16 @@ export class PlatformService {
               owner_id: true,
               creation_id: true,
             },
+            where: {
+              owner_id: {
+                equals: userId,
+              },
+            },
+          }
+        : null,
+      pins: userId
+        ? {
+            select: { id: true },
             where: {
               owner_id: {
                 equals: userId,
@@ -277,13 +282,25 @@ export class PlatformService {
       include: includes,
     });
 
-    const result = { creation: { ...creation, is_stared: !!isStared } };
+    const result = { ...creation, is_stared: !!isStared };
 
     return result;
   }
 
   // create creation
-  async createCreation(userId: string, dto: TCreateCreationDto) {}
+  async createCreation(userId: string, dto: TCreateCreationDto) {
+    const creation = await this.prisma.creation.create({
+      data: {
+        title: dto.title,
+        code_html: dto.code_html,
+        code_css: dto.code_css,
+        code_js: dto.code_js,
+        owner_id: userId,
+      },
+    });
+
+    return creation;
+  }
 
   // update creation
   async updateCreation(
@@ -330,20 +347,24 @@ export class PlatformService {
   async getUserReadme(username: string) {
     // const includes: Prisma.UserInclude = {};
 
-    const user = await this.prisma.user.findUnique({
+    const readme = await this.prisma.readme.findFirst({
       where: {
-        username,
-      },
-      include: {
-        readme: true,
+        owner: {
+          username,
+        },
       },
     });
 
-    return user.readme;
+    return readme;
   }
 
-  // get user creations
-  async getUserCreations(userId: string, username: string, page: number) {
+  // get user stars, pins, creations
+  async getUserCreations(
+    userId: string,
+    username: string,
+    page: number,
+    type: EGetCreationsType,
+  ) {
     const includes: Prisma.CreationInclude = {
       owner: {
         select: {
@@ -368,6 +389,16 @@ export class PlatformService {
             },
           }
         : null,
+      pins: userId
+        ? {
+            select: { id: true },
+            where: {
+              owner_id: {
+                equals: userId,
+              },
+            },
+          }
+        : null,
       _count: {
         select: {
           stars: true,
@@ -377,131 +408,35 @@ export class PlatformService {
     };
 
     const creations = await this.prisma.creation.findMany({
-      take: 8,
-      skip: page ? 8 * (page - 1) : 0,
+      take: type === EGetCreationsType.PINS ? 6 : 4,
+      skip: Number(page) > 1 ? 4 * (Number(page) - 1) : 0,
       where: {
-        owner: {
-          username,
-        },
-      },
-      include: includes,
-      orderBy: {
-        id: 'asc',
-      },
-    });
-
-    return creations;
-  }
-
-  // get user stars
-  async getUserStars(userId: string, username: string, page: number) {
-    const includes: Prisma.StarInclude = {
-      creation: {
-        select: {
-          id: true,
-          title: true,
-          code_html: true,
-          code_css: true,
-          code_js: true,
-          owner: {
-            select: {
-              id: true,
-              username: true,
-              profile: {
-                select: {
-                  avatar: true,
-                },
-              },
-            },
-          },
-          stars: userId
+        owner:
+          type === EGetCreationsType.CREATIONS
             ? {
-                select: {
-                  id: true,
-                },
-                where: {
-                  owner_id: {
-                    equals: userId,
+                username,
+              }
+            : {},
+        pins:
+          type === EGetCreationsType.PINS
+            ? {
+                some: {
+                  owner: {
+                    username,
                   },
                 },
               }
-            : null,
-          _count: {
-            select: {
-              stars: true,
-              comments: true,
-            },
-          },
-        },
-      },
-    };
-
-    const stars = await this.prisma.star.findMany({
-      take: 8,
-      skip: page ? 8 * (page - 1) : 0,
-      where: {
-        owner: {
-          username,
-        },
-      },
-      include: includes,
-      orderBy: {
-        id: 'asc',
-      },
-    });
-
-    return stars;
-  }
-
-  // get user pins
-  async getUserPins(userId: string, username: string) {
-    const includes: Prisma.PinInclude = {
-      creation: {
-        select: {
-          id: true,
-          title: true,
-          code_html: true,
-          code_css: true,
-          code_js: true,
-          owner: {
-            select: {
-              id: true,
-              username: true,
-              profile: {
-                select: {
-                  avatar: true,
-                },
-              },
-            },
-          },
-          stars: userId
+            : {},
+        stars:
+          type === EGetCreationsType.STARS
             ? {
-                select: {
-                  id: true,
-                },
-                where: {
-                  owner_id: {
-                    equals: userId,
+                some: {
+                  owner: {
+                    username,
                   },
                 },
               }
-            : null,
-          _count: {
-            select: {
-              stars: true,
-              comments: true,
-            },
-          },
-        },
-      },
-    };
-
-    const pins = await this.prisma.pin.findMany({
-      take: 6,
-      where: {
-        owner: {
-          username,
-        },
+            : {},
       },
       include: includes,
       orderBy: {
@@ -509,7 +444,54 @@ export class PlatformService {
       },
     });
 
-    return pins;
+    const lastId = creations.length ? creations[creations.length - 1].id : null;
+
+    const restCount = lastId
+      ? await this.prisma.creation.count({
+          where: {
+            id: {
+              gt: lastId,
+            },
+            owner:
+              type === EGetCreationsType.CREATIONS
+                ? {
+                    username,
+                  }
+                : {},
+            stars:
+              type === EGetCreationsType.STARS
+                ? {
+                    some: {
+                      owner: {
+                        username,
+                      },
+                    },
+                  }
+                : {},
+          },
+        })
+      : null;
+
+    return {
+      creations,
+      hasPrevPage: page > 1,
+      hasNextPage: restCount > 0,
+      pageNum: Number(page),
+    };
+
+    // return creations;
+  }
+
+  // get user or owner follow
+  async getUserFollow(userId: string, followeeId: string) {
+    const follow = await this.prisma.follow.findMany({
+      where: {
+        follower_id: userId,
+        followee_id: followeeId,
+      },
+    });
+
+    return follow.length ? follow[0] : null;
   }
 
   // update user profile
@@ -533,30 +515,168 @@ export class PlatformService {
     return readme;
   }
 
-  // upload user image
-  async uploadUserImage(userId: string, file: any) {}
+  // upload user avatar
+  async uploadUserAvatar(userId: string, file: Express.Multer.File) {
+    const prev = await this.prisma.profile.findUnique({
+      where: {
+        owner_id: userId,
+      },
+    });
+
+    // update user profile avatar
+    const profile = await this.prisma.profile.update({
+      where: {
+        owner_id: userId,
+      },
+      data: {
+        avatar: file.path,
+      },
+    });
+
+    profile &&
+      prev &&
+      fs.rm('./' + prev.avatar, (err) => {
+        if (err) throw new BadRequestException(err.syscall);
+      });
+
+    return profile;
+  }
+
+  // upload user banner
+  async uploadUserBanner(userId: string, file: Express.Multer.File) {
+    // update user profile banner
+    const profile = await this.prisma.profile.update({
+      select: {
+        banner: true,
+      },
+      where: {
+        owner_id: userId,
+      },
+      data: {
+        banner: file.path,
+      },
+    });
+
+    return profile;
+  }
 
   // get user followers
-  async getUserFollows(userId: string, page: number, type: EGetFollowsType) {
-    const includes: Prisma.UserInclude = {
-      followers: {},
+  async getUserFollows(
+    userId: string,
+    username: string,
+    page: number,
+    type: EGetFollowsType,
+  ) {
+    const includes: Prisma.FollowInclude = {
+      follower: type === EGetFollowsType.FOLLOWERS && {
+        select: {
+          id: true,
+          first_name: true,
+          last_name: true,
+          username: true,
+          profile: {
+            select: {
+              avatar: true,
+            },
+          },
+          followers: userId
+            ? {
+                select: {
+                  id: true,
+                },
+                where: {
+                  follower_id: {
+                    equals: userId,
+                  },
+                },
+              }
+            : null,
+        },
+      },
+      followee: type === EGetFollowsType.FOLLOWEES && {
+        select: {
+          id: true,
+          first_name: true,
+          last_name: true,
+          username: true,
+          profile: {
+            select: {
+              avatar: true,
+            },
+          },
+        },
+      },
+    };
+
+    const follows = await this.prisma.follow.findMany({
+      take: 6,
+      skip: Number(page) ? 6 * (Number(page) - 1) : 0,
+      where:
+        type === EGetFollowsType.FOLLOWERS
+          ? {
+              followee: {
+                username,
+              },
+            }
+          : {
+              follower: {
+                username,
+              },
+            },
+      include: includes,
+    });
+
+    const lastId = follows.length ? follows[follows.length - 1].id : null;
+
+    const restCount = lastId
+      ? await this.prisma.follow.count({
+          where:
+            type === EGetFollowsType.FOLLOWERS
+              ? {
+                  id: {
+                    gt: lastId,
+                  },
+                  followee: {
+                    username,
+                  },
+                }
+              : {
+                  id: {
+                    gt: follows[follows.length - 1].id,
+                  },
+                  follower: {
+                    username,
+                  },
+                },
+        })
+      : null;
+
+    console.log(restCount);
+
+    return {
+      follows,
+      hasPrevPage: page > 1,
+      hasNextPage: restCount > 0,
+      pageNum: Number(page),
     };
   }
 
   // toggle star
   async toggleStar(userId: string, dto: TToggleStarDto) {
-    const { toggle, id } = dto;
-    if (toggle) {
-      await this.prisma.star.create({
-        data: {
-          owner_id: userId,
-          creation_id: id,
-        },
-      });
-    } else {
+    const { creation_id, star_id } = dto;
+    if (star_id) {
       await this.prisma.star.delete({
         where: {
-          id,
+          id: star_id,
+        },
+      });
+
+      return null;
+    } else {
+      return await this.prisma.star.create({
+        data: {
+          owner_id: userId,
+          creation_id,
         },
       });
     }
@@ -564,18 +684,32 @@ export class PlatformService {
 
   // toggle pin
   async togglePin(userId: string, dto: TTogglePinDto) {
-    const { toggle, id } = dto;
-    if (toggle) {
-      await this.prisma.pin.create({
-        data: {
-          owner_id: userId,
-          creation_id: id,
-        },
-      });
-    } else {
+    // judge pins count not allowed more than 6
+    const pinsCount = await this.prisma.pin.count({
+      where: {
+        owner_id: userId,
+      },
+    });
+
+    if (!dto.pin_id && pinsCount >= 6) {
+      return {
+        message: 'Pins count not allowed more than 6.',
+      };
+    }
+
+    const { creation_id, pin_id } = dto;
+    if (pin_id) {
       await this.prisma.pin.delete({
         where: {
-          id,
+          id: pin_id,
+        },
+      });
+      return null;
+    } else {
+      return await this.prisma.pin.create({
+        data: {
+          owner_id: userId,
+          creation_id,
         },
       });
     }
@@ -583,24 +717,150 @@ export class PlatformService {
 
   // toggle follow
   async toggleFollow(userId: string, dto: TToggleFollowDto) {
-    const { toggle, id } = dto;
-    if (toggle) {
-      await this.prisma.follow.create({
-        data: {
-          follower_id: userId,
-          followee_id: id,
-        },
-      });
-    } else {
+    const { followee_id, follow_id } = dto;
+    if (follow_id) {
       await this.prisma.follow.delete({
         where: {
-          follower_id: userId,
-          followee_id: id,
+          id: follow_id,
         },
       });
+      return null;
+    } else {
+      const follow = await this.prisma.follow.create({
+        data: {
+          follower_id: userId,
+          followee_id,
+        },
+      });
+
+      await this.makeFollowNotify(userId, {
+        notifier_id: followee_id,
+      });
+      return follow;
     }
   }
 
+  // has follow notify
+  async hasFollowNotify(userId: string) {
+    const count = await this.prisma.notifyFollow.count({
+      where: {
+        notifier_id: userId,
+      },
+    });
+
+    return !!count;
+  }
+
+  // get follow notify
+  async getFollowNotify(userId: string, page: number) {
+    const notify = await this.prisma.notifyFollow.findMany({
+      take: 6,
+      skip: Number(page) ? 6 * (Number(page) - 1) : 0,
+      where: {
+        notifier_id: userId,
+      },
+    });
+
+    const restCount = await this.prisma.notifyFollow.count({
+      where: {
+        id: {
+          gt: notify[notify.length - 1].id,
+        },
+        notifier_id: userId,
+      },
+    });
+
+    return {
+      notify,
+      hasPrevPage: page > 1,
+      hasNextPage: restCount > 0,
+      pageNum: Number(page),
+    };
+  }
+
+  // make follow notification
+  async makeFollowNotify(userId: string, dto: TFollowNotifyDto) {
+    const { notifier_id, done = false } = dto;
+    const notify = await this.prisma.notifyFollow.create({
+      data: {
+        follower_id: userId,
+        notifier_id,
+        done,
+      },
+    });
+
+    return notify;
+  }
+
   // delete account
-  async deleteAccount(userId: string) {}
+  async deleteAccount(userId: string) {
+    // delete profile
+    await this.prisma.profile.delete({
+      where: {
+        owner_id: userId,
+      },
+    });
+
+    // delete readme
+    await this.prisma.readme.delete({
+      where: {
+        owner_id: userId,
+      },
+    });
+
+    // delete creations
+    await this.prisma.creation.deleteMany({
+      where: {
+        owner_id: userId,
+      },
+    });
+
+    // delete comments
+    await this.prisma.comment.deleteMany({
+      where: {
+        owner_id: userId,
+      },
+    });
+
+    // delete pins
+    await this.prisma.pin.deleteMany({
+      where: {
+        owner_id: userId,
+      },
+    });
+
+    // delete stars
+    await this.prisma.star.deleteMany({
+      where: {
+        owner_id: userId,
+      },
+    });
+
+    // delete follows
+    await this.prisma.follow.deleteMany({
+      where: {
+        follower_id: userId,
+      },
+    });
+
+    // delete follows
+    await this.prisma.follow.deleteMany({
+      where: {
+        followee_id: userId,
+      },
+    });
+
+    // delete notifications
+    await this.prisma.notifyFollow.deleteMany({
+      where: {
+        notifier_id: userId,
+      },
+    });
+
+    await this.prisma.user.delete({
+      where: {
+        id: userId,
+      },
+    });
+  }
 }

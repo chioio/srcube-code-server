@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { createAvatar } from '@dicebear/avatars';
 import * as style from '@dicebear/avatars-identicon-sprites';
+import fs from 'fs';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { EncryptedHelper, PrismaHelper } from 'src/common/helpers';
@@ -14,6 +15,7 @@ import {
   TTokensVo,
   TSignInDto,
 } from './typings';
+import { nanoid } from 'nanoid';
 
 @Injectable()
 export class AuthService {
@@ -105,8 +107,13 @@ export class AuthService {
     const avatar = createAvatar(style, {
       seed: input.username,
       size: 128,
-      dataUri: true,
       backgroundColor: '#f1f5f9',
+    });
+
+    const filePath = `uploads/avatar/${nanoid(16)}}.svg`;
+
+    fs.writeFile('./' + filePath, avatar, (err) => {
+      if (err) throw err;
     });
 
     const newUser = await this.prisma.user.create({
@@ -115,7 +122,7 @@ export class AuthService {
         password: await EncryptedHelper.encrypt(input.password),
         profile: {
           create: {
-            avatar,
+            avatar: filePath,
           },
         },
         readme: {

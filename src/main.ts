@@ -2,6 +2,7 @@ import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
+const HOSTNAME = process.env.HOSTNAME || 'localhost'
 const PORT = process.env.PORT || 4000;
 
 async function bootstrap() {
@@ -14,7 +15,7 @@ async function bootstrap() {
   await app.listen(PORT);
 
   Logger.log(
-    `🚀 Application is running on http://localhost:${PORT}`,
+    `🚀 Application is running on ${HOSTNAME}:${PORT}`,
     'Bootstrap',
   );
 }
