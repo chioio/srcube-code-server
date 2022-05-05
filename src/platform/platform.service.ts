@@ -68,26 +68,89 @@ export class PlatformService {
       const count = await this.prisma.creation.count();
 
       const creations = await this.prisma.creation.findMany({
-        take: 4,
+        take: 8,
         include: includes,
         orderBy: {
           id: 'asc',
         },
       });
 
-      const hasNextPage = count > 4;
-
-      const cursor = count > 4 ? creations[creations.length - 1].id : null;
+      const hasNextPage = count > 8;
 
       return {
         creations,
-        cursor,
+        startCursor: creations[0].id,
+        endCursor: creations[creations.length - 1].id,
         hasPrevPage: false,
         hasNextPage: hasNextPage,
       };
-    } else {
+    }
+
+    if (cursor && !offset) {
+      const creation = await this.prisma.creation.findUnique({
+        where: {
+          id: cursor,
+        },
+      });
+
+      if (!creation) {
+        throw new BadRequestException('Invalid cursor');
+      }
+
+      const after = await this.prisma.creation.findMany({
+        where: {
+          id: {
+            gt: cursor,
+          },
+        },
+        orderBy: {
+          created_at: 'asc',
+        },
+        include: includes,
+        take: 8,
+      });
+
+      const before = await this.prisma.creation.findMany({
+        where: {
+          id: {
+            lt: cursor,
+          },
+        },
+        orderBy: {
+          created_at: 'desc',
+        },
+        include: includes,
+        take: 4,
+      });
+
+      const gtCount = await this.prisma.creation.count({
+        where: {
+          id: {
+            gt: cursor,
+          },
+        },
+      });
+
+      const ltCount = await this.prisma.creation.count({
+        where: {
+          id: {
+            lt: cursor,
+          },
+        },
+      });
+
+      return {
+        creations: [[before], [after.slice(0, 4)], [after.slice(4)]],
+        startCursor: before[0].id,
+        endCursor: after[after.length - 1].id,
+        hasPrevPage: gtCount > 7,
+        hasNextPage: ltCount > 3,
+      };
+    }
+
+    if (cursor && offset) {
       const creations = await this.prisma.creation.findMany({
-        take: Number(offset),
+        take: offset > 0 ? Number(offset) : Number(offset),
         skip: 1,
         cursor: {
           id: cursor,
@@ -98,40 +161,42 @@ export class PlatformService {
         },
       });
 
-      const nextCursor = creations[creations.length - 1].id;
-
-      const restCount = await this.prisma.creation.count({
-        where: {
-          id:
-            offset > 0
-              ? {
-                  gt: nextCursor,
-                }
-              : {
-                  lt: nextCursor,
-                },
-        },
-      });
-
-      if (creations.length === Math.abs(offset)) {
-        const hasPage =
-          offset > 0
-            ? { hasNextPage: !!restCount, hasPrevPage: true }
-            : { hasNextPage: true, hasPrevPage: restCount > Math.abs(offset) };
-
+      if (creations.length === 0) {
         return {
-          creations,
-          cursor: nextCursor,
-          ...hasPage,
-        };
-      } else {
-        return {
-          creations,
-          cursor: nextCursor,
-          hasNextPage: offset > 0 ? true : false,
-          hasPrevPage: offset < 0 ? true : false,
+          creations: [],
+          startCursor: '',
+          endCursor: '',
+          hasPrevPage: offset > 0 ? true : false,
+          hasNextPage: offset < 0 ? true : false,
         };
       }
+
+      const startCursor = creations[0].id;
+      const endCursor = creations[creations.length - 1].id;
+
+      // const beforeCount = await this.prisma.creation.count({
+      //   where: {
+      //     id: {
+      //       lt: startCursor,
+      //     },
+      //   },
+      // });
+
+      // const afterCount = await this.prisma.creation.count({
+      //   where: {
+      //     id: {
+      //       gt: endCursor,
+      //     },
+      //   },
+      // });
+
+      return {
+        creations,
+        startCursor,
+        endCursor,
+        hasPrevPage: true,
+        hasNextPage: true,
+      };
     }
   }
 
@@ -307,10 +372,72 @@ export class PlatformService {
     userId: string,
     creationId: string,
     dto: TUpdateCreationDto,
-  ) {}
+  ) {
+    const creation = await this.prisma.creation.update({
+      where: {
+        id: creationId,
+      },
+      data: {
+        title: dto.title,
+        code_html: dto.code_html,
+        code_css: dto.code_css,
+        code_js: dto.code_js,
+      },
+    });
+
+    return creation;
+  }
 
   // delete creation
   async deleteCreation(userId: string, creationId: string) {}
+
+  // is stared
+  async isStarred(userId: string, creationId: string) {
+    const result = await this.prisma.star.findFirst({
+      where: {
+        creation_id: {
+          equals: creationId,
+        },
+        owner_id: {
+          equals: userId,
+        },
+      },
+    });
+
+    return result?.id || null;
+  }
+
+  // is followed
+  async isFollowed(userId: string, followeeId: string) {
+    const result = await this.prisma.follow.findFirst({
+      where: {
+        follower_id: {
+          equals: userId,
+        },
+        followee_id: {
+          equals: followeeId,
+        },
+      },
+    });
+
+    return result?.id || null;
+  }
+
+  // is pinned
+  async isPinned(userId: string, creationId: string) {
+    const result = await this.prisma.pin.findFirst({
+      where: {
+        creation_id: {
+          equals: creationId,
+        },
+        owner_id: {
+          equals: userId,
+        },
+      },
+    });
+
+    return result?.id || null;
+  }
 
   // get user profile
   async getUserProfile(username: string) {

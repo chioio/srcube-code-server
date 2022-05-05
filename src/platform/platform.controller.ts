@@ -53,6 +53,7 @@ const multerImageOptions = {
     }
   },
 };
+
 @Controller()
 export class PlatformController {
   constructor(private readonly platformService: PlatformService) {}
@@ -117,6 +118,37 @@ export class PlatformController {
   @HttpCode(HttpStatus.OK)
   deleteCreation(@CurrentUser('sub') userId: string, @Param('id') id: string) {
     return this.platformService.deleteCreation(userId, id);
+  }
+
+  // is starred
+  @UseGuards(AtGuard)
+  @Get('creation/is-starred')
+  @HttpCode(HttpStatus.OK)
+  isStarred(
+    @CurrentUser('sub') userId: string,
+    @Query('creation_id') creationId: string,
+  ) {
+    return this.platformService.isStarred(userId, creationId);
+  }
+
+  // is pinned
+  @UseGuards(AtGuard)
+  @Get('creation/is-pinned')
+  isPinned(
+    @CurrentUser('sub') userId: string,
+    @Query('creation_id') creationId: string,
+  ) {
+    return this.platformService.isPinned(userId, creationId);
+  }
+
+  // is followed
+  @UseGuards(AtGuard)
+  @Get('follow/is-followed')
+  isFollowed(
+    @CurrentUser('sub') userId: string,
+    @Query('followee_id') followeeId: string,
+  ) {
+    return this.platformService.isFollowed(userId, followeeId);
   }
 
   // get user profile
