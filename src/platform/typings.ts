@@ -12,6 +12,11 @@ export type TUpdateCreationDto = {
   code_js?: string;
 };
 
+export type TCreateCommentDto = {
+  creation_id: string;
+  content: string;
+}
+
 export type TUpdateProfileDto = {
   username: string;
   first_name: string;

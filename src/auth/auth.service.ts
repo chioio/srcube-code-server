@@ -53,14 +53,14 @@ export class AuthService {
         { sub: userId, user: username },
         {
           secret: process.env.ACCESS_TOKEN_SECRET,
-          expiresIn: '15m',
+          expiresIn: '1h',
         },
       ),
       this.jwt.signAsync(
         { sub: userId, user: username },
         {
           secret: process.env.REFRESH_TOKEN_SECRET,
-          expiresIn: '1d',
+          expiresIn: '7d',
         },
       ),
     ]);

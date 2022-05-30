@@ -14,6 +14,7 @@ import {
   UploadedFile,
   BadRequestException,
   Res,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import multer from 'multer';
@@ -24,6 +25,7 @@ import { PlatformService } from './platform.service';
 import {
   EGetCreationsType,
   EGetFollowsType,
+  TCreateCommentDto,
   TCreateCreationDto,
   TToggleFollowDto,
   TTogglePinDto,
@@ -45,6 +47,8 @@ const multerImageOptions = {
     },
   }),
   fileFilter: (req, file, cb) => {
+    Logger.log(file);
+
     const isPhoto = file.mimetype.startsWith('image/');
     if (isPhoto) {
       cb(null, true);
@@ -102,11 +106,11 @@ export class PlatformController {
 
   // update creation
   @UseGuards(AtGuard)
-  @Post('creation/:id')
+  @Post('creation/update')
   @HttpCode(HttpStatus.OK)
   updateCreation(
     @CurrentUser('sub') userId: string,
-    @Param('id') id: string,
+    @Query('id') id: string,
     @Body() dto: TUpdateCreationDto,
   ) {
     return this.platformService.updateCreation(userId, id, dto);
@@ -114,10 +118,45 @@ export class PlatformController {
 
   // delete creation
   @UseGuards(AtGuard)
-  @Delete('creation/:id')
+  @Delete('creation')
   @HttpCode(HttpStatus.OK)
-  deleteCreation(@CurrentUser('sub') userId: string, @Param('id') id: string) {
+  deleteCreation(@CurrentUser('sub') userId: string, @Query('creation_id') id: string) {
     return this.platformService.deleteCreation(userId, id);
+  }
+
+  // get stars
+  @Public()
+  @UseGuards(OtGuard)
+  @Get('creation/stars')
+  @HttpCode(HttpStatus.OK)
+  getStars(
+    @CurrentUser('sub') userId: string,
+    @Query('creation_id') creationId: string,
+  ) {
+    return this.platformService.getStars(creationId);
+  }
+
+  // create comment
+  @UseGuards(AtGuard)
+  @Post('creation/comment')
+  @HttpCode(HttpStatus.CREATED)
+  createComment(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: TCreateCommentDto,
+  ) {
+    return this.platformService.createComment(userId, dto);
+  }
+
+  // get comments
+  @Public()
+  @UseGuards(OtGuard)
+  @Get('creation/comments')
+  @HttpCode(HttpStatus.OK)
+  getComments(
+    @CurrentUser('sub') userId: string,
+    @Query('creation_id') creationId: string,
+  ) {
+    return this.platformService.getComments(creationId);
   }
 
   // is starred

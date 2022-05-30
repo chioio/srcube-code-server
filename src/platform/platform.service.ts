@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
@@ -11,6 +11,7 @@ import {
   EGetCreationsType,
   TToggleFollowDto,
   TFollowNotifyDto,
+  TCreateCommentDto,
 } from './typings';
 import fs from 'fs';
 
@@ -201,7 +202,7 @@ export class PlatformService {
   }
 
   // get search
-  async getSearch(userId: string, title: string) {
+  async getSearch(userId: string, query: string, page: number = 0) {
     const includes: Prisma.CreationInclude = {
       stars: userId
         ? {
@@ -259,15 +260,37 @@ export class PlatformService {
     };
 
     const creations = await this.prisma.creation.findMany({
+      take: 4,
+      skip: Number(page) > 1 ? 4 * (Number(page) - 1) : 0,
       where: {
         title: {
-          contains: title,
+          contains: query,
         },
       },
       include: includes,
+      orderBy: {
+        id: 'asc',
+      },
     });
 
-    return creations;
+    const lastId = creations.length ? creations[creations.length - 1].id : null;
+
+    const restCount = lastId
+      ? await this.prisma.creation.count({
+          where: {
+            title: {
+              contains: query,
+            },
+          },
+        })
+      : null;
+
+    return {
+      creations,
+      hasPrevPage: page > 1,
+      hasNextPage: restCount > 0,
+      pageNum: Number(page),
+    };
   }
 
   // get creation
@@ -281,10 +304,19 @@ export class PlatformService {
       : null;
 
     const includes: Prisma.CreationInclude = {
-      owner: userId
-        ? {
+      owner: {
+        select: {
+          id: true,
+          username: true,
+          first_name: true,
+          last_name: true,
+          profile: {
             select: {
-              followers: {
+              avatar: true,
+            },
+          },
+          followers: userId
+            ? {
                 select: { id: true },
                 where: {
                   follower_id: userId
@@ -293,22 +325,10 @@ export class PlatformService {
                       }
                     : null,
                 },
-              },
-            },
-          }
-        : {
-            select: {
-              id: true,
-              username: true,
-              first_name: true,
-              last_name: true,
-              profile: {
-                select: {
-                  avatar: true,
-                },
-              },
-            },
-          },
+              }
+            : {},
+        },
+      },
       comments: {
         select: {
           id: true,
@@ -354,7 +374,7 @@ export class PlatformService {
 
   // create creation
   async createCreation(userId: string, dto: TCreateCreationDto) {
-    const creation = await this.prisma.creation.create({
+    const created = await this.prisma.creation.create({
       data: {
         title: dto.title,
         code_html: dto.code_html,
@@ -363,6 +383,8 @@ export class PlatformService {
         owner_id: userId,
       },
     });
+
+    const creation = await this.getCreation(userId, created.id);
 
     return creation;
   }
@@ -389,7 +411,89 @@ export class PlatformService {
   }
 
   // delete creation
-  async deleteCreation(userId: string, creationId: string) {}
+  async deleteCreation(userId: string, creationId: string) {
+    const creation = await this.prisma.creation.delete({
+      where: {
+        id: creationId,
+      },
+    });
+
+    return creation;
+  }
+
+  // create comment
+  async createComment(userId: string, dto: TCreateCommentDto) {
+    const { creation_id, content } = dto;
+
+    const comment = await this.prisma.comment.create({
+      data: {
+        owner_id: userId,
+        creation_id,
+        content,
+      },
+    });
+
+    return comment;
+  }
+
+  // get comments
+  async getComments(creationId: string) {
+    const includes: Prisma.CommentInclude = {
+      owner: {
+        select: {
+          id: true,
+          username: true,
+          first_name: true,
+          last_name: true,
+          profile: {
+            select: {
+              avatar: true,
+            },
+          },
+        },
+      },
+    };
+
+    const comments = await this.prisma.comment.findMany({
+      where: {
+        creation_id: creationId,
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+      include: includes,
+    });
+
+    return comments;
+  }
+
+  // get stars
+  async getStars(creationId: string) {
+    const includes: Prisma.StarInclude = {
+      owner: {
+        select: {
+          id: true,
+          username: true,
+          first_name: true,
+          last_name: true,
+          profile: {
+            select: {
+              avatar: true,
+            },
+          },
+        },
+      },
+    };
+
+    const stars = await this.prisma.star.findMany({
+      where: {
+        creation_id: creationId,
+      },
+      include: includes,
+    });
+
+    return stars;
+  }
 
   // is stared
   async isStarred(userId: string, creationId: string) {
@@ -605,8 +709,6 @@ export class PlatformService {
       hasNextPage: restCount > 0,
       pageNum: Number(page),
     };
-
-    // return creations;
   }
 
   // get user or owner follow
@@ -622,7 +724,26 @@ export class PlatformService {
   }
 
   // update user profile
-  async updateUserProfile(userId: string, dto: any) {}
+  async updateUserProfile(userId: string, dto: any) {
+    const { first_name, last_name, ...profile } = dto;
+
+    const user = await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        first_name,
+        last_name,
+        profile: {
+          update: {
+            ...profile,
+          },
+        },
+      },
+    });
+
+    return { username: user.username };
+  }
 
   // update user readme
   async updateUserReadme(userId: string, dto: TUpdateUserReadmeDto) {
